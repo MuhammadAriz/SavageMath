@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -17,7 +18,7 @@ const GenerateRoastInputSchema = z.object({
 export type GenerateRoastInput = z.infer<typeof GenerateRoastInputSchema>;
 
 const GenerateRoastOutputSchema = z.object({
-  roast: z.string().describe('A funny and savage Gen Z style roast.'),
+  roast: z.string().describe('A funny and savage Gen Z style roast in Roman Urdu.'),
 });
 export type GenerateRoastOutput = z.infer<typeof GenerateRoastOutputSchema>;
 
@@ -29,7 +30,7 @@ const generateRoastPrompt = ai.definePrompt({
   name: 'generateRoastPrompt',
   input: {schema: GenerateRoastInputSchema},
   output: {schema: GenerateRoastOutputSchema},
-  prompt: `Give me a funny and savage one-liner Gen Z style roast for someone who failed a basic math question about {{{topic}}}.`,
+  prompt: `Give me a funny and savage one-liner Gen Z style roast in Roman Urdu for someone who failed a basic math question about {{{topic}}}.`,
 });
 
 const generateRoastFlow = ai.defineFlow(
