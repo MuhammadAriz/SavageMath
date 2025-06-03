@@ -7,11 +7,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { generateRoast } from '@/ai/flows/generate-roast';
 import { generateCompliment } from '@/ai/flows/generate-compliment';
-import { Loader2, Send, AlertTriangle, SmilePlus, ChevronRight } from 'lucide-react';
+import { generateBossRoast } from '@/ai/flows/generate-boss-roast';
+import { generateBossCompliment } from '@/ai/flows/generate-boss-compliment';
+import { Loader2, Send, AlertTriangle, SmilePlus, ChevronRight, MessageSquarePlus, Brain } from 'lucide-react';
 import Confetti from 'react-confetti';
+import SubmissionDialog from '@/components/submission-dialog';
+import { useToast } from "@/hooks/use-toast";
+
 
 type Operator = '+' | '-' | '*' | '/';
-const TIMER_DURATION = 5; // 5 seconds
+const TIMER_DURATION = 10; // Increased timer for harder questions
+const STREAK_TARGET = 5;
 
 export default function MathChallengeClient() {
   const [questionStr, setQuestionStr] = useState<string>('Loading question...');
@@ -33,6 +39,9 @@ export default function MathChallengeClient() {
   const buttonContainerRef = useRef<HTMLDivElement>(null);
 
   const [isFeedbackPhase, setIsFeedbackPhase] = useState<boolean>(false);
+  const [currentStreak, setCurrentStreak] = useState<number>(0);
+  const [isSubmissionDialogOpen, setIsSubmissionDialogOpen] = useState<boolean>(false);
+  const { toast } = useToast();
 
 
   const getOperationTypeForAI = useCallback((op: Operator): string => {
@@ -48,38 +57,38 @@ export default function MathChallengeClient() {
     setUserAnswer('');
     setIsLoading(false);
     setShowConfetti(false);
-    
-    // Important: Reset timeLeft here to ensure timer effect restarts correctly
     setTimeLeft(TIMER_DURATION); 
 
     const ops: Operator[] = ['+', '-', '*', '/'];
     const currentOp = ops[Math.floor(Math.random() * ops.length)];
-    let n1 = Math.floor(Math.random() * 10) + 1;
-    let n2 = Math.floor(Math.random() * 10) + 1;
+    let n1: number, n2: number;
     let calculatedAnswer: number;
 
     switch (currentOp) {
       case '+':
+        n1 = Math.floor(Math.random() * 90) + 10; // 10 to 99
+        n2 = Math.floor(Math.random() * 90) + 10; // 10 to 99
         calculatedAnswer = n1 + n2;
         break;
       case '-':
-        // Ensure n1 is greater or equal to n2 for non-negative results in subtraction for simplicity
-        if (n1 < n2) {
-          [n1, n2] = [n2, n1]; 
-        }
+        n1 = Math.floor(Math.random() * 90) + 10; // 10 to 99
+        n2 = Math.floor(Math.random() * n1) + 1;  // Ensure n2 <= n1 for positive results
+        if (n1 < n2) [n1, n2] = [n2, n1]; // ensure positive result, or allow negative if preferred
         calculatedAnswer = n1 - n2;
         break;
       case '*':
-        n1 = Math.floor(Math.random() * 12) + 1;
-        n2 = Math.floor(Math.random() * 12) + 1;
+        n1 = Math.floor(Math.random() * 13) + 2; // 2 to 14
+        n2 = Math.floor(Math.random() * 13) + 2; // 2 to 14
         calculatedAnswer = n1 * n2;
         break;
       case '/':
-        n2 = Math.floor(Math.random() * 9) + 2; // Divisor not 0 or 1
-        n1 = (Math.floor(Math.random() * 9) + 1) * n2; // Ensure whole number result
+        n2 = Math.floor(Math.random() * 11) + 2; // Divisor 2 to 12
+        const maxQuotient = 15;
+        n1 = (Math.floor(Math.random() * maxQuotient) + 1) * n2; // Ensure whole number result, quotient 1 to 15
         calculatedAnswer = n1 / n2;
         break;
       default:
+        n1 = 0; n2 = 0; // Should not happen
         calculatedAnswer = 0;
     }
 
@@ -91,9 +100,9 @@ export default function MathChallengeClient() {
 
     if (buttonContainerRef.current) {
       const containerWidth = buttonContainerRef.current.offsetWidth;
-      const maxLeft = Math.max(0, containerWidth - 180); // Assuming button width ~180px
+      const maxLeft = Math.max(0, containerWidth - 180); 
       const newLeft = Math.random() * maxLeft;
-      const newTop = Math.random() * 10 + 5; // Random top within 5px to 15px
+      const newTop = Math.random() * 10 + 5;
       
       setButtonStyle({
         position: 'absolute',
@@ -102,42 +111,49 @@ export default function MathChallengeClient() {
         transition: 'left 0.5s ease-out, top 0.5s ease-out',
       });
     }
-  }, []); // Removed dependencies like setTimeLeft as they are stable setters
+  }, []); 
 
-  // Initial question generation
   useEffect(() => {
     generateNewQuestion();
   }, [generateNewQuestion]);
 
 
   const handleTimeUp = useCallback(async () => {
-    if (isLoading || isFeedbackPhase) return; // Don't run if already processing or in feedback
+    if (isLoading || isFeedbackPhase) return; 
 
-    if (timerIdRef.current) {
-      clearInterval(timerIdRef.current);
-    }
+    if (timerIdRef.current) clearInterval(timerIdRef.current);
     
     setIsLoading(true);
-    setIsFeedbackPhase(true); // Enter feedback phase
+    setIsFeedbackPhase(true);
     setFeedback(`⏰ Time's up! AI is brewing a roast...`);
     
     try {
-      const roastResult = await generateRoast({
-        topic: getOperationTypeForAI(operator),
-        question: `${num1} ${operator} ${num2}`,
-        userAnswer: "Ran out of time",
-      });
-      setFeedback(`❌ ${roastResult.roast}`);
+      let roastMessage: string;
+      if (currentStreak >= STREAK_TARGET) {
+        const bossRoastResult = await generateBossRoast({
+          topic: getOperationTypeForAI(operator),
+          question: `${num1} ${operator} ${num2}`,
+          userAnswer: "Ran out of time",
+        });
+        roastMessage = bossRoastResult.bossRoast;
+      } else {
+        const roastResult = await generateRoast({
+          topic: getOperationTypeForAI(operator),
+          question: `${num1} ${operator} ${num2}`,
+          userAnswer: "Ran out of time",
+        });
+        roastMessage = roastResult.roast;
+      }
+      setFeedback(`❌ ${roastMessage}`);
     } catch (error: any) {
       console.error("AI API Error (Time Up):", error);
       setFeedback(`😵‍💫 Oops! AI hiccup: ${error.message || 'Failed to get response.'}`);
     } finally {
+      setCurrentStreak(0); // Reset streak on timeout
       setIsLoading(false);
-      // DO NOT generate new question here. Wait for "Next Question" button.
     }
-  }, [num1, num2, operator, isLoading, isFeedbackPhase, getOperationTypeForAI]);
+  }, [num1, num2, operator, isLoading, isFeedbackPhase, getOperationTypeForAI, currentStreak]);
 
-  // Timer effect
   useEffect(() => {
     if (isFeedbackPhase || isLoading) {
       if (timerIdRef.current) clearInterval(timerIdRef.current);
@@ -176,59 +192,102 @@ export default function MathChallengeClient() {
     event.preventDefault();
     if (isLoading || timeLeft === 0 || isFeedbackPhase) return;
 
-    if (timerIdRef.current) {
-      clearInterval(timerIdRef.current);
-    }
+    if (timerIdRef.current) clearInterval(timerIdRef.current);
 
     const userAnswerNum = parseFloat(userAnswer);
     if (isNaN(userAnswerNum)) {
       setFeedback("❌ Please enter a valid number.");
-      // Restart timer for the same question allowing user to correct
       setTimeLeft(TIMER_DURATION); 
       return;
     }
     
     setIsLoading(true);
-    setIsFeedbackPhase(true); // Enter feedback phase
+    setIsFeedbackPhase(true); 
     setFeedback('⏳ AI is brewing a response...');
     const isCorrect = Math.abs(userAnswerNum - correctAnswer) < 0.001;
     
     try {
       if (isCorrect) {
+        const newStreak = currentStreak + 1;
+        setCurrentStreak(newStreak);
         setShowConfetti(true);
-        const complimentResult = await generateCompliment({ 
-          question: `${num1} ${operator} ${num2}`, 
-          answer: correctAnswer 
-        });
-        setFeedback(`✅ ${complimentResult.compliment}`);
+        let complimentMessage: string;
+
+        if (newStreak >= STREAK_TARGET) {
+           const bossComplimentResult = await generateBossCompliment({ 
+            question: `${num1} ${operator} ${num2}`, 
+            answer: correctAnswer 
+          });
+          complimentMessage = bossComplimentResult.bossCompliment;
+        } else {
+          const complimentResult = await generateCompliment({ 
+            question: `${num1} ${operator} ${num2}`, 
+            answer: correctAnswer 
+          });
+          complimentMessage = complimentResult.compliment;
+        }
+        setFeedback(`✅ ${complimentMessage} (Streak: ${newStreak})`);
         setTimeout(() => setShowConfetti(false), 4000);
       } else {
-        const roastResult = await generateRoast({
-          topic: getOperationTypeForAI(operator),
-          question: `${num1} ${operator} ${num2}`,
-          userAnswer: userAnswer,
-        });
-        setFeedback(`❌ ${roastResult.roast}`);
+        let roastMessage: string;
+        if (currentStreak >= STREAK_TARGET) {
+          const bossRoastResult = await generateBossRoast({
+            topic: getOperationTypeForAI(operator),
+            question: `${num1} ${operator} ${num2}`,
+            userAnswer: userAnswer,
+          });
+          roastMessage = bossRoastResult.bossRoast;
+        } else {
+          const roastResult = await generateRoast({
+            topic: getOperationTypeForAI(operator),
+            question: `${num1} ${operator} ${num2}`,
+            userAnswer: userAnswer,
+          });
+          roastMessage = roastResult.roast;
+        }
+        setFeedback(`❌ ${roastMessage}`);
+        setCurrentStreak(0); // Reset streak
       }
     } catch (error: any) {
       console.error("AI API Error:", error);
       setFeedback(`😵‍💫 Oops! AI hiccup: ${error.message || 'Failed to get response.'}`);
+      setCurrentStreak(0); // Reset streak on error too
     } finally {
       setIsLoading(false);
-      // DO NOT generate new question here. Wait for "Next Question" button.
     }
   };
 
   const handleNextQuestion = () => {
-    setIsFeedbackPhase(false); // Exit feedback phase
-    generateNewQuestion(); // This will also reset timeLeft and trigger timer effect
+    setIsFeedbackPhase(false);
+    generateNewQuestion(); 
+  };
+
+  const handleOpenSubmissionDialog = () => {
+    setIsSubmissionDialogOpen(true);
+  };
+
+  const handleSubmission = (type: 'roast' | 'compliment', text: string) => {
+    console.log(`User submitted ${type}: ${text}`); // Placeholder
+    toast({
+      title: "Submission Received!",
+      description: `Your ${type} has been submitted. Thanks for making SavageMath 🔥er! (Note: Submissions are not yet integrated into the game.)`,
+    });
+    setIsSubmissionDialogOpen(false);
   };
   
-  const timerColor = timeLeft <= 2 && !isFeedbackPhase ? 'text-destructive' : 'text-accent';
+  const timerColor = timeLeft <= 3 && !isFeedbackPhase ? 'text-destructive' : 'text-accent';
 
   return (
     <>
-      {showConfetti && windowSize.width > 0 && <Confetti width={windowSize.width} height={windowSize.height} recycle={false} numberOfPieces={300} />}
+      {showConfetti && windowSize.width > 0 && <Confetti width={windowSize.width} height={windowSize.height} recycle={false} numberOfPieces={400} gravity={0.2} />}
+      <div className="flex justify-between items-center w-full mb-2">
+        <Button variant="outline" size="sm" onClick={handleOpenSubmissionDialog} className="bg-card/80 hover:bg-card">
+          <MessageSquarePlus className="mr-2 h-4 w-4" /> Suggest
+        </Button>
+         <div className="flex items-center text-lg font-semibold text-primary">
+          <Brain className="mr-2 h-5 w-5" /> Streak: {currentStreak}
+        </div>
+      </div>
       <p className={`text-xl font-bold text-center my-3 ${timerColor}`}>
         {!isFeedbackPhase ? `Time left: ${timeLeft}s` : ' '}
       </p>
@@ -256,7 +315,7 @@ export default function MathChallengeClient() {
                 <Button 
                   onClick={handleNextQuestion} 
                   className="h-12 text-lg font-medium px-8 min-w-[200px]"
-                  type="button" // Important: type="button" to not submit form
+                  type="button"
                 >
                   Next Question <ChevronRight className="ml-2 h-5 w-5" />
                 </Button>
@@ -264,7 +323,7 @@ export default function MathChallengeClient() {
                 <Button 
                   type="submit" 
                   className="h-12 text-lg font-medium px-8 min-w-[180px]"
-                  style={!isFeedbackPhase ? buttonStyle : {}} // Only apply moving style if not in feedback
+                  style={!isFeedbackPhase ? buttonStyle : {}}
                   disabled={isLoading || timeLeft === 0 || userAnswer.trim() === '' || isFeedbackPhase}
                 >
                   {isLoading && !feedback.startsWith("✅") && !feedback.startsWith("❌") && !feedback.startsWith("😵‍💫") && !feedback.startsWith("⏰") ? (
@@ -278,7 +337,7 @@ export default function MathChallengeClient() {
             </div>
           </form>
           {feedback && (
-            <div className={`mt-6 p-4 rounded-md bg-muted/70 border border-border/30 min-h-[5rem] flex items-center justify-center transition-opacity duration-500 ease-in-out ${feedback ? 'opacity-100' : 'opacity-0'}`}>
+            <div className={`mt-6 p-4 rounded-md bg-muted/70 border border-border/30 min-h-[6rem] flex items-center justify-center transition-opacity duration-500 ease-in-out ${feedback ? 'opacity-100' : 'opacity-0'}`}>
               <p className="text-center text-md sm:text-lg font-body leading-relaxed">
                 {feedback.startsWith("✅") && <SmilePlus className="inline mr-2 h-6 w-6 text-green-400"/>}
                 {feedback.startsWith("❌") && <AlertTriangle className="inline mr-2 h-6 w-6 text-red-400"/>}
@@ -290,7 +349,11 @@ export default function MathChallengeClient() {
           )}
         </CardContent>
       </Card>
+      <SubmissionDialog 
+        isOpen={isSubmissionDialogOpen}
+        onClose={() => setIsSubmissionDialogOpen(false)}
+        onSubmit={handleSubmission}
+      />
     </>
   );
 }
-
