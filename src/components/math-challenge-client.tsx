@@ -89,7 +89,11 @@ export default function MathChallengeClient() {
         });
         setFeedback(`✅ ${complimentResult.compliment}`);
       } else {
-        const roastResult = await generateRoast({ topic: operationTypeForRoast });
+        const roastResult = await generateRoast({
+          topic: operationTypeForRoast,
+          question: questionStr, // Add the question
+          userAnswer: userAnswer, // Add the user's answer
+        });
         setFeedback(`❌ ${roastResult.roast}`);
       }
     } catch (error: any) {
