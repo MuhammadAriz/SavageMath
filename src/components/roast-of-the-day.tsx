@@ -27,17 +27,14 @@ export default function RoastOfTheDay() {
       setLoading(true);
       setError(null);
       try {
-        // TODO: Replace "YOUR_PROJECT_ID" in src/lib/firebase.ts with your actual Firebase project ID
         if (db.app.options.projectId === "YOUR_PROJECT_ID") {
           setError("Firebase not configured. Please update src/lib/firebase.ts. Displaying fallback roast.");
-          setDailyRoast(fallbackRoast + " (Fallback)");
+          setDailyRoast(fallbackRoast + " (Firebase Not Configured)");
           setLoading(false);
           return;
         }
 
         const submissionsCol = collection(db, 'submissions');
-        // For simplicity, fetching the latest submitted roast.
-        // A true "Roast of the Day" might involve more complex logic (e.g., highest-rated, admin-picked).
         const q = query(submissionsCol, where('type', '==', 'roast'), orderBy('submittedAt', 'desc'), limit(10));
         const querySnapshot = await getDocs(q);
         
@@ -47,16 +44,16 @@ export default function RoastOfTheDay() {
         });
 
         if (roasts.length > 0) {
-          // Pick a random roast from the fetched ones
           const randomIndex = Math.floor(Math.random() * roasts.length);
           setDailyRoast(roasts[randomIndex].text);
         } else {
-          setDailyRoast(fallbackRoast + " (No roasts in DB)");
+          setError("No roasts found in the database. Be the first to submit one!");
+          setDailyRoast(fallbackRoast + " (No roasts in DB yet)");
         }
       } catch (err: any) {
-        console.error("Error fetching roast of the day:", err);
-        setError("Failed to load Roast of the Day. Ensure Firestore 'submissions' collection exists and is readable.");
-        setDailyRoast(fallbackRoast + " (Error loading)");
+        console.error("Error fetching roast of the day:", err); // Check browser console for detailed Firebase error
+        setError("Failed to load Roast of the Day. Check Firestore: 'submissions' collection should exist, be readable, and have necessary indexes (e.g., for type & submittedAt).");
+        setDailyRoast(fallbackRoast + " (Error from Firestore)");
       } finally {
         setLoading(false);
       }
@@ -96,8 +93,12 @@ export default function RoastOfTheDay() {
          <p className="text-xs text-center mt-3 text-muted-foreground/70">
           {db.app.options.projectId === "YOUR_PROJECT_ID" 
             ? "(Connect to Firebase for live roasts)" 
-            : error 
-            ? "(Showing fallback roast due to error)"
+            : error && dailyRoast.includes("(Error from Firestore)")
+            ? "(Showing fallback roast due to Firestore error)"
+            : error && dailyRoast.includes("(No roasts in DB yet)")
+            ? "(No roasts in DB, fallback shown)"
+            : error && dailyRoast.includes("(Firebase Not Configured)")
+            ? "(Firebase not configured, fallback shown)"
             : "(Fetched from user submissions)"}
         </p>
       </CardContent>
