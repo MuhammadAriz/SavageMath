@@ -19,7 +19,7 @@ const GenerateComplimentInputSchema = z.object({
 export type GenerateComplimentInput = z.infer<typeof GenerateComplimentInputSchema>;
 
 const GenerateComplimentOutputSchema = z.object({
-  compliment: z.string().describe('A witty, Gen Z compliment in Roman Urdu for solving the math question correctly.'),
+  compliment: z.string().describe('A witty, creative, and varied Gen Z compliment in Roman Urdu for solving the math question correctly.'),
 });
 export type GenerateComplimentOutput = z.infer<typeof GenerateComplimentOutputSchema>;
 
@@ -31,7 +31,7 @@ const prompt = ai.definePrompt({
   name: 'generateComplimentPrompt',
   input: {schema: GenerateComplimentInputSchema},
   output: {schema: GenerateComplimentOutputSchema},
-  prompt: `You are a Gen Z chatbot. The user has just solved the following math question correctly: {{{question}}} The answer was {{{answer}}}. Give the user a single, witty, Gen Z compliment in Roman Urdu.`,
+  prompt: `You are a Gen Z chatbot. The user has just solved the following math question correctly: {{{question}}} The answer was {{{answer}}}. Give the user a single, witty, Gen Z compliment in Roman Urdu. Be creative and try to use different phrasing each time. Avoid overly common or repetitive lead-ins. Make it sound fresh!`,
 });
 
 const generateComplimentFlow = ai.defineFlow(

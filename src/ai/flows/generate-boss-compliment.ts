@@ -18,7 +18,7 @@ const GenerateBossComplimentInputSchema = z.object({
 export type GenerateBossComplimentInput = z.infer<typeof GenerateBossComplimentInputSchema>;
 
 const GenerateBossComplimentOutputSchema = z.object({
-  bossCompliment: z.string().describe('An absolutely epic, over-the-top, Gen Z compliment in Roman Urdu for achieving a 5-question streak.'),
+  bossCompliment: z.string().describe('An absolutely epic, over-the-top, legendary Gen Z compliment STRICTLY in Roman Urdu for achieving a 5-question streak. No other languages. Must be creative and avoid repetitive starts.'),
 });
 export type GenerateBossComplimentOutput = z.infer<typeof GenerateBossComplimentOutputSchema>;
 
@@ -30,7 +30,9 @@ const prompt = ai.definePrompt({
   name: 'generateBossComplimentPrompt',
   input: {schema: GenerateBossComplimentInputSchema},
   output: {schema: GenerateBossComplimentOutputSchema},
-  prompt: `You are a hype Gen Z chatbot. The user just achieved an amazing 5-question correct streak! The last question they nailed was "{{{question}}}" and the answer was {{{answer}}}. Deliver an absolutely epic, over-the-top, legendary Gen Z compliment in Roman Urdu for this math god/goddess. Make it memorable!`,
+  prompt: `You are a hype Gen Z chatbot. The user just achieved an amazing 5-question correct streak! The last question they nailed was "{{{question}}}" and the answer was {{{answer}}}. Deliver an absolutely epic, over-the-top, legendary Gen Z compliment for this math god/goddess. 
+  IMPORTANT: The compliment MUST be in Roman Urdu ONLY. Do not use any other language. Ensure the entire response is in Roman Urdu.
+  Avoid starting with common phrases like 'Oye hoye! Paanch sawalaat bilkul sahi?'. Instead, come up with something fresh, unique, and even more hype for this massive achievement. Make it memorable and make them feel like a true champion!`,
 });
 
 const generateBossComplimentFlow = ai.defineFlow(

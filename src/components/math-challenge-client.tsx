@@ -42,6 +42,8 @@ export default function MathChallengeClient() {
   const [currentStreak, setCurrentStreak] = useState<number>(0);
   const [isSubmissionDialogOpen, setIsSubmissionDialogOpen] = useState<boolean>(false);
   const { toast } = useToast();
+  const [userSuggestion, setUserSuggestion] = useState<string>('');
+  const [hasApiError, setHasApiError] = useState<boolean>(false);
 
 
   const getOperationTypeForAI = useCallback((op: Operator): string => {
@@ -57,6 +59,8 @@ export default function MathChallengeClient() {
     setUserAnswer('');
     setIsLoading(false);
     setShowConfetti(false);
+    setHasApiError(false); // Reset API error state on new question
+    setUserSuggestion(''); // Clear suggestion on new question
     setTimeLeft(TIMER_DURATION); 
 
     const ops: Operator[] = ['+', '-', '*', '/'];
@@ -126,6 +130,14 @@ export default function MathChallengeClient() {
     setIsLoading(true);
     setIsFeedbackPhase(true);
     setFeedback(`⏰ Time's up! AI is brewing a roast...`);
+
+    // Check for API error and user suggestion
+    if (hasApiError && userSuggestion.trim() !== '') {
+      setFeedback(`❌ ${userSuggestion} (Used user suggestion due to API error)`);
+      setHasApiError(false);
+      setUserSuggestion('');
+      return;
+    }
     
     try {
       let roastMessage: string;
@@ -148,6 +160,7 @@ export default function MathChallengeClient() {
     } catch (error: any) {
       console.error("AI API Error (Time Up):", error);
       setFeedback(`😵‍💫 Oops! AI hiccup: ${error.message || 'Failed to get response.'}`);
+      setHasApiError(true); // Set API error state
     } finally {
       setCurrentStreak(0); // Reset streak on timeout
       setIsLoading(false);
@@ -204,6 +217,14 @@ export default function MathChallengeClient() {
     setIsLoading(true);
     setIsFeedbackPhase(true); 
     setFeedback('⏳ AI is brewing a response...');
+
+    // Check for API error and user suggestion
+    if (hasApiError && userSuggestion.trim() !== '') {
+      setFeedback(`✅ ${userSuggestion} (Used user suggestion due to API error)`);
+      setHasApiError(false);
+      setUserSuggestion('');
+      return;
+    }
     const isCorrect = Math.abs(userAnswerNum - correctAnswer) < 0.001;
     
     try {
@@ -254,7 +275,7 @@ export default function MathChallengeClient() {
       setCurrentStreak(0); // Reset streak on error too
     } finally {
       setIsLoading(false);
-    }
+    } 
   };
 
   const handleNextQuestion = () => {
@@ -267,14 +288,15 @@ export default function MathChallengeClient() {
   };
 
   const handleSubmission = (type: 'roast' | 'compliment', text: string) => {
-    console.log(`User submitted ${type}: ${text}`); // Placeholder
+    console.log(`User submitted ${type}: ${text}`);
+    setUserSuggestion(text); // Store user suggestion
     toast({
       title: "Submission Received!",
       description: `Your ${type} has been submitted. Thanks for making SavageMath 🔥er! (Note: Submissions are not yet integrated into the game.)`,
     });
     setIsSubmissionDialogOpen(false);
   };
-  
+
   const timerColor = timeLeft <= 3 && !isFeedbackPhase ? 'text-destructive' : 'text-accent';
 
   return (
