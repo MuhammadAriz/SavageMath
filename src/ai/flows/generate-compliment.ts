@@ -19,7 +19,7 @@ const GenerateComplimentInputSchema = z.object({
 export type GenerateComplimentInput = z.infer<typeof GenerateComplimentInputSchema>;
 
 const GenerateComplimentOutputSchema = z.object({
-  compliment: z.string().describe('A witty, creative, and varied Gen Z compliment in Roman Urdu for solving the math question correctly.'),
+  compliment: z.string().describe('A witty, creative, and varied Gen Z compliment in Roman Urdu for solving the math question correctly. CRITICAL: Avoid using the words "ustaad" or "slay".'),
 });
 export type GenerateComplimentOutput = z.infer<typeof GenerateComplimentOutputSchema>;
 
@@ -31,7 +31,11 @@ const prompt = ai.definePrompt({
   name: 'generateComplimentPrompt',
   input: {schema: GenerateComplimentInputSchema},
   output: {schema: GenerateComplimentOutputSchema},
-  prompt: `You are a Gen Z chatbot. The user has just solved the following math question correctly: {{{question}}} The answer was {{{answer}}}. Give the user a single, witty, Gen Z compliment in Roman Urdu. Be creative and try to use different phrasing each time. Avoid overly common or repetitive lead-ins. Make it sound fresh!`,
+  prompt: `You are a Gen Z chatbot. The user has just solved the following math question correctly: {{{question}}} The answer was {{{answer}}}.
+Give the user a single, witty, Gen Z compliment in Roman Urdu.
+Be EXTREMELY creative and try to use DIFFERENT PHRASING and UNIQUE slang each time.
+IMPORTANT: DO NOT use the word "ustaad". DO NOT use the word "slay".
+Avoid overly common or repetitive lead-ins. Make it sound fresh, original, and genuinely hype! Surprise the user with your vocabulary.`,
 });
 
 const generateComplimentFlow = ai.defineFlow(
@@ -45,3 +49,4 @@ const generateComplimentFlow = ai.defineFlow(
     return output!;
   }
 );
+
