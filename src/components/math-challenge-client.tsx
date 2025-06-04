@@ -42,7 +42,8 @@ export default function MathChallengeClient() {
   const [currentStreak, setCurrentStreak] = useState<number>(0);
   const [isSubmissionDialogOpen, setIsSubmissionDialogOpen] = useState<boolean>(false);
   const { toast } = useToast();
-  const [userSuggestion, setUserSuggestion] = useState<string>('');
+  // userSuggestion is kept for cases where API fails, but primary submission is via dialog
+  const [userSuggestionForFailedApi, setUserSuggestionForFailedApi] = useState<string>('');
   const [hasApiError, setHasApiError] = useState<boolean>(false);
 
 
@@ -60,7 +61,7 @@ export default function MathChallengeClient() {
     setIsLoading(false);
     setShowConfetti(false);
     setHasApiError(false); 
-    setUserSuggestion(''); 
+    setUserSuggestionForFailedApi(''); 
     setTimeLeft(TIMER_DURATION); 
 
     const ops: Operator[] = ['+', '-', '*', '/'];
@@ -131,10 +132,10 @@ export default function MathChallengeClient() {
     setIsFeedbackPhase(true);
     setFeedback(`⏰ Time's up! AI is brewing a roast...`);
     
-    if (hasApiError && userSuggestion.trim() !== '') {
-      setFeedback(`💡 ${userSuggestion} (AI unavailable, using your suggestion)`);
+    if (hasApiError && userSuggestionForFailedApi.trim() !== '') {
+      setFeedback(`💡 ${userSuggestionForFailedApi} (AI unavailable, using your suggestion)`);
       setHasApiError(false);
-      setUserSuggestion('');
+      setUserSuggestionForFailedApi('');
       setIsLoading(false);
       return;
     }
@@ -157,13 +158,13 @@ export default function MathChallengeClient() {
       setFeedback(`❌ ${roastMessage}`);
     } catch (error: any) {
       console.error("AI API Error (Time Up):", error);
-      setFeedback(`😵‍💫 Oops! AI hiccup: ${error.message || 'Failed to get response.'}`);
+      setFeedback(`😵‍💫 Oops! AI hiccup: ${error.message || 'Failed to get response.'} Maybe suggest a roast while it recovers?`);
       setHasApiError(true); 
     } finally {
       setCurrentStreak(0); 
       setIsLoading(false);
     }
-  }, [num1, num2, operator, isLoading, isFeedbackPhase, getOperationTypeForAI, currentStreak, hasApiError, userSuggestion]);
+  }, [num1, num2, operator, isLoading, isFeedbackPhase, getOperationTypeForAI, currentStreak, hasApiError, userSuggestionForFailedApi]);
 
   useEffect(() => {
     if (isFeedbackPhase || isLoading) {
@@ -211,10 +212,10 @@ export default function MathChallengeClient() {
     setIsFeedbackPhase(true); 
     setFeedback('⏳ AI is brewing a response...');
 
-    if (hasApiError && userSuggestion.trim() !== '') {
-      setFeedback(`💡 ${userSuggestion} (AI unavailable, using your suggestion)`);
+    if (hasApiError && userSuggestionForFailedApi.trim() !== '') {
+      setFeedback(`💡 ${userSuggestionForFailedApi} (AI unavailable, using your suggestion)`);
       setHasApiError(false);
-      setUserSuggestion('');
+      setUserSuggestionForFailedApi('');
       setIsLoading(false);
       return;
     }
@@ -240,7 +241,7 @@ export default function MathChallengeClient() {
         setFeedback(`❌ ${roastMessage}`);
       } catch (error: any) {
         console.error("AI API Error (Invalid Input):", error);
-        setFeedback(`😵‍💫 Oops! AI hiccup: ${error.message || 'Failed to get response.'}`);
+        setFeedback(`😵‍💫 Oops! AI hiccup: ${error.message || 'Failed to get response.'} Feel free to suggest a roast!`);
         setHasApiError(true);
       } finally {
         setCurrentStreak(0);
@@ -289,7 +290,7 @@ export default function MathChallengeClient() {
         }
       } catch (error: any) {
         console.error("AI API Error:", error);
-        setFeedback(`😵‍💫 Oops! AI hiccup: ${error.message || 'Failed to get response.'}`);
+        setFeedback(`😵‍💫 Oops! AI hiccup: ${error.message || 'Failed to get response.'} Perhaps suggest a compliment/roast?`);
         setHasApiError(true);
         if (!isCorrect) setCurrentStreak(0); 
       } finally {
@@ -307,21 +308,19 @@ export default function MathChallengeClient() {
     setIsSubmissionDialogOpen(true);
   };
 
-  const handleSubmission = (type: 'roast' | 'compliment', text: string) => {
-    console.log(`User submitted ${type}: ${text}`);
-    setUserSuggestion(text); 
-    toast({
-      title: "Submission Received!",
-      description: `Your ${type} has been submitted. Thanks for making SavageMath 🔥er! (Note: Submissions are not yet integrated into the game.)`,
-      variant: "default",
-    });
-    setIsSubmissionDialogOpen(false);
-  };
+  // The actual submission to Firestore is handled in SubmissionDialog now
+  // This function is kept if we want to use userSuggestionForFailedApi
+  // const handleLocalSubmissionForFailedApi = (type: 'roast' | 'compliment', text: string) => {
+  //   console.log(`User submitted ${type} for failed API: ${text}`);
+  //   setUserSuggestionForFailedApi(text); 
+  //   // Toast is now handled in SubmissionDialog or if API error occurs
+  //   setIsSubmissionDialogOpen(false); // Assuming dialog closes after this
+  // };
 
   const handleVote = (voteType: 'upvote' | 'downvote') => {
     toast({
       title: `Vote Recorded! (UI Only)`,
-      description: `You ${voteType}d this feedback. This is a UI placeholder; votes are not currently saved.`,
+      description: `You ${voteType}d this feedback. This is a UI placeholder; votes are not currently saved to a database for AI responses.`,
       variant: "default",
     });
   };
@@ -342,7 +341,7 @@ export default function MathChallengeClient() {
       {showConfetti && windowSize.width > 0 && <Confetti width={windowSize.width} height={windowSize.height} recycle={false} numberOfPieces={400} gravity={0.2} />}
       <div className="flex justify-between items-center w-full mb-2">
         <Button variant="outline" size="sm" onClick={handleOpenSubmissionDialog} className="bg-card/80 hover:bg-card">
-          <MessageSquarePlus className="mr-2 h-4 w-4" /> Suggest
+          <MessageSquarePlus className="mr-2 h-4 w-4" /> Suggest Line
         </Button>
          <div className="flex items-center text-lg font-semibold text-primary">
           <Brain className="mr-2 h-5 w-5" /> Streak: {currentStreak}
@@ -418,7 +417,7 @@ export default function MathChallengeClient() {
       <SubmissionDialog 
         isOpen={isSubmissionDialogOpen}
         onClose={() => setIsSubmissionDialogOpen(false)}
-        onSubmit={handleSubmission}
+        // onSubmit is now handled internally by SubmissionDialog
       />
     </>
   );
