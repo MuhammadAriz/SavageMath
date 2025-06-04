@@ -9,7 +9,7 @@ import { generateRoast } from '@/ai/flows/generate-roast';
 import { generateCompliment } from '@/ai/flows/generate-compliment';
 import { generateBossRoast } from '@/ai/flows/generate-boss-roast';
 import { generateBossCompliment } from '@/ai/flows/generate-boss-compliment';
-import { Loader2, Send, AlertTriangle, SmilePlus, ChevronRight, MessageSquarePlus, Brain } from 'lucide-react';
+import { Loader2, Send, AlertTriangle, SmilePlus, ChevronRight, MessageSquarePlus, Brain, Info } from 'lucide-react';
 import Confetti from 'react-confetti';
 import SubmissionDialog from '@/components/submission-dialog';
 import { useToast } from "@/hooks/use-toast";
@@ -59,8 +59,8 @@ export default function MathChallengeClient() {
     setUserAnswer('');
     setIsLoading(false);
     setShowConfetti(false);
-    setHasApiError(false); // Reset API error state on new question
-    setUserSuggestion(''); // Clear suggestion on new question
+    setHasApiError(false); 
+    setUserSuggestion(''); 
     setTimeLeft(TIMER_DURATION); 
 
     const ops: Operator[] = ['+', '-', '*', '/'];
@@ -70,29 +70,29 @@ export default function MathChallengeClient() {
 
     switch (currentOp) {
       case '+':
-        n1 = Math.floor(Math.random() * 90) + 10; // 10 to 99
-        n2 = Math.floor(Math.random() * 90) + 10; // 10 to 99
+        n1 = Math.floor(Math.random() * 90) + 10; 
+        n2 = Math.floor(Math.random() * 90) + 10; 
         calculatedAnswer = n1 + n2;
         break;
       case '-':
-        n1 = Math.floor(Math.random() * 90) + 10; // 10 to 99
-        n2 = Math.floor(Math.random() * n1) + 1;  // Ensure n2 <= n1 for positive results
-        if (n1 < n2) [n1, n2] = [n2, n1]; // ensure positive result, or allow negative if preferred
+        n1 = Math.floor(Math.random() * 90) + 10; 
+        n2 = Math.floor(Math.random() * n1) + 1;  
+        if (n1 < n2) [n1, n2] = [n2, n1]; 
         calculatedAnswer = n1 - n2;
         break;
       case '*':
-        n1 = Math.floor(Math.random() * 13) + 2; // 2 to 14
-        n2 = Math.floor(Math.random() * 13) + 2; // 2 to 14
+        n1 = Math.floor(Math.random() * 13) + 2; 
+        n2 = Math.floor(Math.random() * 13) + 2; 
         calculatedAnswer = n1 * n2;
         break;
       case '/':
-        n2 = Math.floor(Math.random() * 11) + 2; // Divisor 2 to 12
+        n2 = Math.floor(Math.random() * 11) + 2; 
         const maxQuotient = 15;
-        n1 = (Math.floor(Math.random() * maxQuotient) + 1) * n2; // Ensure whole number result, quotient 1 to 15
+        n1 = (Math.floor(Math.random() * maxQuotient) + 1) * n2; 
         calculatedAnswer = n1 / n2;
         break;
       default:
-        n1 = 0; n2 = 0; // Should not happen
+        n1 = 0; n2 = 0; 
         calculatedAnswer = 0;
     }
 
@@ -130,42 +130,40 @@ export default function MathChallengeClient() {
     setIsLoading(true);
     setIsFeedbackPhase(true);
     setFeedback(`⏰ Time's up! AI is brewing a roast...`);
-
-    // Check for API error and user suggestion
+    
     if (hasApiError && userSuggestion.trim() !== '') {
-      setFeedback(`❌ ${userSuggestion} (Used user suggestion due to API error)`);
+      setFeedback(`💡 ${userSuggestion} (AI unavailable, using your suggestion)`);
       setHasApiError(false);
       setUserSuggestion('');
+      setIsLoading(false);
       return;
     }
     
     try {
       let roastMessage: string;
+      const roastInput = {
+        topic: getOperationTypeForAI(operator),
+        question: `${num1} ${operator} ${num2}`,
+        userAnswer: undefined, // undefined for timeout
+      };
+
       if (currentStreak >= STREAK_TARGET) {
-        const bossRoastResult = await generateBossRoast({
-          topic: getOperationTypeForAI(operator),
-          question: `${num1} ${operator} ${num2}`,
-          userAnswer: "Ran out of time",
-        });
+        const bossRoastResult = await generateBossRoast(roastInput);
         roastMessage = bossRoastResult.bossRoast;
       } else {
-        const roastResult = await generateRoast({
-          topic: getOperationTypeForAI(operator),
-          question: `${num1} ${operator} ${num2}`,
-          userAnswer: "Ran out of time",
-        });
+        const roastResult = await generateRoast(roastInput);
         roastMessage = roastResult.roast;
       }
       setFeedback(`❌ ${roastMessage}`);
     } catch (error: any) {
       console.error("AI API Error (Time Up):", error);
       setFeedback(`😵‍💫 Oops! AI hiccup: ${error.message || 'Failed to get response.'}`);
-      setHasApiError(true); // Set API error state
+      setHasApiError(true); 
     } finally {
-      setCurrentStreak(0); // Reset streak on timeout
+      setCurrentStreak(0); 
       setIsLoading(false);
     }
-  }, [num1, num2, operator, isLoading, isFeedbackPhase, getOperationTypeForAI, currentStreak]);
+  }, [num1, num2, operator, isLoading, isFeedbackPhase, getOperationTypeForAI, currentStreak, hasApiError, userSuggestion]);
 
   useEffect(() => {
     if (isFeedbackPhase || isLoading) {
@@ -207,74 +205,99 @@ export default function MathChallengeClient() {
 
     if (timerIdRef.current) clearInterval(timerIdRef.current);
 
-    const userAnswerNum = parseFloat(userAnswer);
-    if (isNaN(userAnswerNum)) {
-      setFeedback("❌ Please enter a valid number.");
-      setTimeLeft(TIMER_DURATION); 
-      return;
-    }
+    const trimmedUserAnswer = userAnswer.trim();
     
     setIsLoading(true);
     setIsFeedbackPhase(true); 
     setFeedback('⏳ AI is brewing a response...');
 
-    // Check for API error and user suggestion
     if (hasApiError && userSuggestion.trim() !== '') {
-      setFeedback(`✅ ${userSuggestion} (Used user suggestion due to API error)`);
+      setFeedback(`💡 ${userSuggestion} (AI unavailable, using your suggestion)`);
       setHasApiError(false);
       setUserSuggestion('');
+      setIsLoading(false);
       return;
     }
-    const isCorrect = Math.abs(userAnswerNum - correctAnswer) < 0.001;
-    
-    try {
-      if (isCorrect) {
-        const newStreak = currentStreak + 1;
-        setCurrentStreak(newStreak);
-        setShowConfetti(true);
-        let complimentMessage: string;
 
-        if (newStreak >= STREAK_TARGET) {
-           const bossComplimentResult = await generateBossCompliment({ 
-            question: `${num1} ${operator} ${num2}`, 
-            answer: correctAnswer 
-          });
-          complimentMessage = bossComplimentResult.bossCompliment;
-        } else {
-          const complimentResult = await generateCompliment({ 
-            question: `${num1} ${operator} ${num2}`, 
-            answer: correctAnswer 
-          });
-          complimentMessage = complimentResult.compliment;
-        }
-        setFeedback(`✅ ${complimentMessage} (Streak: ${newStreak})`);
-        setTimeout(() => setShowConfetti(false), 4000);
-      } else {
+    const userAnswerNum = parseFloat(trimmedUserAnswer);
+
+    if (trimmedUserAnswer === '' || isNaN(userAnswerNum)) {
+      // Handle empty or non-numeric input
+      try {
         let roastMessage: string;
+        const roastInput = {
+          topic: getOperationTypeForAI(operator),
+          question: `${num1} ${operator} ${num2}`,
+          userAnswer: trimmedUserAnswer === '' ? undefined : trimmedUserAnswer,
+        };
+
         if (currentStreak >= STREAK_TARGET) {
-          const bossRoastResult = await generateBossRoast({
-            topic: getOperationTypeForAI(operator),
-            question: `${num1} ${operator} ${num2}`,
-            userAnswer: userAnswer,
-          });
+          const bossRoastResult = await generateBossRoast(roastInput);
           roastMessage = bossRoastResult.bossRoast;
         } else {
-          const roastResult = await generateRoast({
-            topic: getOperationTypeForAI(operator),
-            question: `${num1} ${operator} ${num2}`,
-            userAnswer: userAnswer,
-          });
+          const roastResult = await generateRoast(roastInput);
           roastMessage = roastResult.roast;
         }
         setFeedback(`❌ ${roastMessage}`);
-        setCurrentStreak(0); // Reset streak
+      } catch (error: any) {
+        console.error("AI API Error (Invalid Input):", error);
+        setFeedback(`😵‍💫 Oops! AI hiccup: ${error.message || 'Failed to get response.'}`);
+        setHasApiError(true);
+      } finally {
+        setCurrentStreak(0);
+        setIsLoading(false);
       }
-    } catch (error: any) {
-      console.error("AI API Error:", error);
-      setFeedback(`😵‍💫 Oops! AI hiccup: ${error.message || 'Failed to get response.'}`);
-      setCurrentStreak(0); // Reset streak on error too
-    } finally {
-      setIsLoading(false);
+    } else {
+      // Handle numeric input (isCorrect or incorrect number)
+      const isCorrect = Math.abs(userAnswerNum - correctAnswer) < 0.001;
+      try {
+        if (isCorrect) {
+          const newStreak = currentStreak + 1;
+          setCurrentStreak(newStreak);
+          setShowConfetti(true);
+          let complimentMessage: string;
+
+          if (newStreak >= STREAK_TARGET) {
+            const bossComplimentResult = await generateBossCompliment({ 
+              question: `${num1} ${operator} ${num2}`, 
+              answer: correctAnswer 
+            });
+            complimentMessage = bossComplimentResult.bossCompliment;
+          } else {
+            const complimentResult = await generateCompliment({ 
+              question: `${num1} ${operator} ${num2}`, 
+              answer: correctAnswer 
+            });
+            complimentMessage = complimentResult.compliment;
+          }
+          setFeedback(`✅ ${complimentMessage} (Streak: ${newStreak})`);
+          setTimeout(() => setShowConfetti(false), 4000);
+        } else {
+          // Incorrect numeric answer
+          let roastMessage: string;
+          const roastInput = {
+            topic: getOperationTypeForAI(operator),
+            question: `${num1} ${operator} ${num2}`,
+            userAnswer: trimmedUserAnswer, // Pass the incorrect number as string
+          };
+          if (currentStreak >= STREAK_TARGET) {
+            const bossRoastResult = await generateBossRoast(roastInput);
+            roastMessage = bossRoastResult.bossRoast;
+          } else {
+            const roastResult = await generateRoast(roastInput);
+            roastMessage = roastResult.roast;
+          }
+          setFeedback(`❌ ${roastMessage}`);
+          setCurrentStreak(0);
+        }
+      } catch (error: any) {
+        console.error("AI API Error:", error);
+        setFeedback(`😵‍💫 Oops! AI hiccup: ${error.message || 'Failed to get response.'}`);
+        setHasApiError(true);
+        setCurrentStreak(0); 
+      } finally {
+        setIsLoading(false);
+      }
     } 
   };
 
@@ -289,7 +312,7 @@ export default function MathChallengeClient() {
 
   const handleSubmission = (type: 'roast' | 'compliment', text: string) => {
     console.log(`User submitted ${type}: ${text}`);
-    setUserSuggestion(text); // Store user suggestion
+    setUserSuggestion(text); 
     toast({
       title: "Submission Received!",
       description: `Your ${type} has been submitted. Thanks for making SavageMath 🔥er! (Note: Submissions are not yet integrated into the game.)`,
@@ -298,6 +321,14 @@ export default function MathChallengeClient() {
   };
 
   const timerColor = timeLeft <= 3 && !isFeedbackPhase ? 'text-destructive' : 'text-accent';
+  const feedbackIcon = () => {
+    if (feedback.startsWith("✅")) return <SmilePlus className="inline mr-2 h-6 w-6 text-green-400"/>;
+    if (feedback.startsWith("❌")) return <AlertTriangle className="inline mr-2 h-6 w-6 text-red-400"/>;
+    if (feedback.startsWith("😵‍💫")) return <AlertTriangle className="inline mr-2 h-6 w-6 text-yellow-400"/>;
+    if (feedback.startsWith("⏰")) return <AlertTriangle className="inline mr-2 h-6 w-6 text-orange-400"/>;
+    if (feedback.startsWith("💡")) return <Info className="inline mr-2 h-6 w-6 text-blue-400"/>;
+    return null;
+  }
 
   return (
     <>
@@ -322,8 +353,7 @@ export default function MathChallengeClient() {
         <CardContent className="relative">
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              type="number"
-              step="any"
+              type="text"
               id="answer"
               value={userAnswer}
               onChange={(e) => setUserAnswer(e.target.value)}
@@ -348,12 +378,12 @@ export default function MathChallengeClient() {
                   style={!isFeedbackPhase ? buttonStyle : {}}
                   disabled={isLoading || timeLeft === 0 || userAnswer.trim() === '' || isFeedbackPhase}
                 >
-                  {isLoading && !feedback.startsWith("✅") && !feedback.startsWith("❌") && !feedback.startsWith("😵‍💫") && !feedback.startsWith("⏰") ? (
+                  {isLoading && !feedback.startsWith("✅") && !feedback.startsWith("❌") && !feedback.startsWith("😵‍💫") && !feedback.startsWith("⏰") && !feedback.startsWith("💡") ? (
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   ) : (
                     <Send className="mr-2 h-5 w-5" />
                   )}
-                  {isLoading && !feedback.startsWith("✅") && !feedback.startsWith("❌") && !feedback.startsWith("😵‍💫") && !feedback.startsWith("⏰") ? 'Thinking...' : 'Submit Answer'}
+                  {isLoading && !feedback.startsWith("✅") && !feedback.startsWith("❌") && !feedback.startsWith("😵‍💫") && !feedback.startsWith("⏰") && !feedback.startsWith("💡") ? 'Thinking...' : 'Submit Answer'}
                 </Button>
               )}
             </div>
@@ -361,10 +391,7 @@ export default function MathChallengeClient() {
           {feedback && (
             <div className={`mt-6 p-4 rounded-md bg-muted/70 border border-border/30 min-h-[6rem] flex items-center justify-center transition-opacity duration-500 ease-in-out ${feedback ? 'opacity-100' : 'opacity-0'}`}>
               <p className="text-center text-md sm:text-lg font-body leading-relaxed">
-                {feedback.startsWith("✅") && <SmilePlus className="inline mr-2 h-6 w-6 text-green-400"/>}
-                {feedback.startsWith("❌") && <AlertTriangle className="inline mr-2 h-6 w-6 text-red-400"/>}
-                {feedback.startsWith("😵‍💫") && <AlertTriangle className="inline mr-2 h-6 w-6 text-yellow-400"/>}
-                {feedback.startsWith("⏰") && <AlertTriangle className="inline mr-2 h-6 w-6 text-orange-400"/>}
+                {feedbackIcon()}
                 {feedback.substring(feedback.indexOf(" ") + 1)}
               </p>
             </div>
