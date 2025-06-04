@@ -9,7 +9,7 @@ import { generateRoast } from '@/ai/flows/generate-roast';
 import { generateCompliment } from '@/ai/flows/generate-compliment';
 import { generateBossRoast } from '@/ai/flows/generate-boss-roast';
 import { generateBossCompliment } from '@/ai/flows/generate-boss-compliment';
-import { Loader2, Send, AlertTriangle, SmilePlus, ChevronRight, MessageSquarePlus, Brain, Info } from 'lucide-react';
+import { Loader2, Send, AlertTriangle, SmilePlus, ChevronRight, MessageSquarePlus, Brain, Info, ThumbsUp, ThumbsDown } from 'lucide-react';
 import Confetti from 'react-confetti';
 import SubmissionDialog from '@/components/submission-dialog';
 import { useToast } from "@/hooks/use-toast";
@@ -144,7 +144,7 @@ export default function MathChallengeClient() {
       const roastInput = {
         topic: getOperationTypeForAI(operator),
         question: `${num1} ${operator} ${num2}`,
-        userAnswer: undefined, // undefined for timeout
+        userAnswer: undefined, 
       };
 
       if (currentStreak >= STREAK_TARGET) {
@@ -222,7 +222,6 @@ export default function MathChallengeClient() {
     const userAnswerNum = parseFloat(trimmedUserAnswer);
 
     if (trimmedUserAnswer === '' || isNaN(userAnswerNum)) {
-      // Handle empty or non-numeric input
       try {
         let roastMessage: string;
         const roastInput = {
@@ -248,7 +247,6 @@ export default function MathChallengeClient() {
         setIsLoading(false);
       }
     } else {
-      // Handle numeric input (isCorrect or incorrect number)
       const isCorrect = Math.abs(userAnswerNum - correctAnswer) < 0.001;
       try {
         if (isCorrect) {
@@ -273,12 +271,11 @@ export default function MathChallengeClient() {
           setFeedback(`✅ ${complimentMessage} (Streak: ${newStreak})`);
           setTimeout(() => setShowConfetti(false), 4000);
         } else {
-          // Incorrect numeric answer
           let roastMessage: string;
           const roastInput = {
             topic: getOperationTypeForAI(operator),
             question: `${num1} ${operator} ${num2}`,
-            userAnswer: trimmedUserAnswer, // Pass the incorrect number as string
+            userAnswer: trimmedUserAnswer, 
           };
           if (currentStreak >= STREAK_TARGET) {
             const bossRoastResult = await generateBossRoast(roastInput);
@@ -294,7 +291,7 @@ export default function MathChallengeClient() {
         console.error("AI API Error:", error);
         setFeedback(`😵‍💫 Oops! AI hiccup: ${error.message || 'Failed to get response.'}`);
         setHasApiError(true);
-        setCurrentStreak(0); 
+        if (!isCorrect) setCurrentStreak(0); 
       } finally {
         setIsLoading(false);
       }
@@ -316,9 +313,19 @@ export default function MathChallengeClient() {
     toast({
       title: "Submission Received!",
       description: `Your ${type} has been submitted. Thanks for making SavageMath 🔥er! (Note: Submissions are not yet integrated into the game.)`,
+      variant: "default",
     });
     setIsSubmissionDialogOpen(false);
   };
+
+  const handleVote = (voteType: 'upvote' | 'downvote') => {
+    toast({
+      title: `Vote Recorded! (UI Only)`,
+      description: `You ${voteType}d this feedback. This is a UI placeholder; votes are not currently saved.`,
+      variant: "default",
+    });
+  };
+
 
   const timerColor = timeLeft <= 3 && !isFeedbackPhase ? 'text-destructive' : 'text-accent';
   const feedbackIcon = () => {
@@ -360,7 +367,7 @@ export default function MathChallengeClient() {
               placeholder="Your Answer"
               className="text-center text-lg h-12 bg-input placeholder:text-muted-foreground"
               disabled={isLoading || isFeedbackPhase || (!isFeedbackPhase && timeLeft === 0)}
-              required
+              
             />
             <div ref={buttonContainerRef} className="relative h-16 w-full flex items-center justify-center">
               {isFeedbackPhase && !isLoading ? (
@@ -389,11 +396,21 @@ export default function MathChallengeClient() {
             </div>
           </form>
           {feedback && (
-            <div className={`mt-6 p-4 rounded-md bg-muted/70 border border-border/30 min-h-[6rem] flex items-center justify-center transition-opacity duration-500 ease-in-out ${feedback ? 'opacity-100' : 'opacity-0'}`}>
-              <p className="text-center text-md sm:text-lg font-body leading-relaxed">
+            <div className={`mt-6 p-4 rounded-md bg-muted/70 border border-border/30 min-h-[6rem] flex flex-col items-center justify-center transition-opacity duration-500 ease-in-out ${feedback ? 'opacity-100' : 'opacity-0'}`}>
+              <p className="text-center text-md sm:text-lg font-body leading-relaxed mb-2">
                 {feedbackIcon()}
                 {feedback.substring(feedback.indexOf(" ") + 1)}
               </p>
+              {isFeedbackPhase && !isLoading && (feedback.startsWith("✅") || feedback.startsWith("❌")) && (
+                <div className="flex space-x-2 mt-2">
+                  <Button variant="ghost" size="sm" onClick={() => handleVote('upvote')} aria-label="Upvote feedback">
+                    <ThumbsUp className="h-5 w-5 text-green-500" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleVote('downvote')} aria-label="Downvote feedback">
+                    <ThumbsDown className="h-5 w-5 text-red-500" />
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
