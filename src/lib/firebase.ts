@@ -5,12 +5,12 @@ import { getFirestore } from "firebase/firestore";
 
 // TODO: Replace with your actual Firebase project configuration
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCkg5lVp22_TmQOKYtkT8tsJW94Sd3fB5o",
+  authDomain: "savagemath.firebaseapp.com",
+  projectId: "savagemath",
+  storageBucket: "savagemath.firebasestorage.app",
+  messagingSenderId: "460962338541",
+  appId: "1:460962338541:web:c7731c5fbd8873412b5ee4"
 };
 
 // Initialize Firebase

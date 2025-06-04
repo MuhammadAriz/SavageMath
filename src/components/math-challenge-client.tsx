@@ -13,10 +13,12 @@ import { Loader2, Send, AlertTriangle, SmilePlus, ChevronRight, MessageSquarePlu
 import Confetti from 'react-confetti';
 import SubmissionDialog from '@/components/submission-dialog';
 import { useToast } from "@/hooks/use-toast";
+import { db } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
 
 
 type Operator = '+' | '-' | '*' | '/';
-const TIMER_DURATION = 10; // Increased timer for harder questions
+const TIMER_DURATION = 10; 
 const STREAK_TARGET = 5;
 
 export default function MathChallengeClient() {
@@ -26,7 +28,7 @@ export default function MathChallengeClient() {
   const [operator, setOperator] = useState<Operator>('+');
   const [correctAnswer, setCorrectAnswer] = useState<number>(0);
   const [userAnswer, setUserAnswer] = useState<string>('');
-  const [feedback, setFeedback] = useState<string>('');
+  const [feedback, setFeedback] = useState<string>(''); // For display with prefix
   const [isLoading, setIsLoading] = useState<boolean>(false);
   
   const [timeLeft, setTimeLeft] = useState<number>(TIMER_DURATION);
@@ -42,9 +44,14 @@ export default function MathChallengeClient() {
   const [currentStreak, setCurrentStreak] = useState<number>(0);
   const [isSubmissionDialogOpen, setIsSubmissionDialogOpen] = useState<boolean>(false);
   const { toast } = useToast();
-  // userSuggestion is kept for cases where API fails, but primary submission is via dialog
+  
   const [userSuggestionForFailedApi, setUserSuggestionForFailedApi] = useState<string>('');
   const [hasApiError, setHasApiError] = useState<boolean>(false);
+
+  const [currentAiMessage, setCurrentAiMessage] = useState<string | null>(null);
+  const [currentAiMessageType, setCurrentAiMessageType] = useState<'roast' | 'compliment' | null>(null);
+  const [currentFeedbackDocId, setCurrentFeedbackDocId] = useState<string | null>(null);
+  const [hasVotedOnCurrentFeedback, setHasVotedOnCurrentFeedback] = useState<boolean>(false);
 
 
   const getOperationTypeForAI = useCallback((op: Operator): string => {
@@ -55,6 +62,35 @@ export default function MathChallengeClient() {
     return 'math';
   }, []);
 
+  const saveAiFeedbackToFirestore = async (message: string, type: 'roast' | 'compliment') => {
+    if (db.app.options.projectId === "YOUR_PROJECT_ID") {
+      console.warn("Firebase not configured, AI feedback not saved.");
+      return null;
+    }
+    try {
+      const docRef = await addDoc(collection(db, 'ai_generated_feedback'), {
+        text: message,
+        type: type,
+        upvotes: 0,
+        downvotes: 0,
+        submittedAt: serverTimestamp(),
+        question: `${num1} ${operator} ${num2}`,
+        correctAnswer: correctAnswer,
+        userAnswerContext: userAnswer, // context of user's answer when this AI feedback was generated
+      });
+      return docRef.id;
+    } catch (error) {
+      console.error("Error saving AI feedback to Firestore:", error);
+      toast({
+        title: "Voting System Error",
+        description: "Could not save AI feedback for voting. Votes won't be recorded for this item.",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
+
   const generateNewQuestion = useCallback(() => {
     setFeedback('');
     setUserAnswer('');
@@ -63,6 +99,10 @@ export default function MathChallengeClient() {
     setHasApiError(false); 
     setUserSuggestionForFailedApi(''); 
     setTimeLeft(TIMER_DURATION); 
+    setCurrentAiMessage(null);
+    setCurrentAiMessageType(null);
+    setCurrentFeedbackDocId(null);
+    setHasVotedOnCurrentFeedback(false);
 
     const ops: Operator[] = ['+', '-', '*', '/'];
     const currentOp = ops[Math.floor(Math.random() * ops.length)];
@@ -131,6 +171,10 @@ export default function MathChallengeClient() {
     setIsLoading(true);
     setIsFeedbackPhase(true);
     setFeedback(`⏰ Time's up! AI is brewing a roast...`);
+    setCurrentAiMessage(null);
+    setCurrentAiMessageType(null);
+    setCurrentFeedbackDocId(null);
+    setHasVotedOnCurrentFeedback(false);
     
     if (hasApiError && userSuggestionForFailedApi.trim() !== '') {
       setFeedback(`💡 ${userSuggestionForFailedApi} (AI unavailable, using your suggestion)`);
@@ -155,7 +199,12 @@ export default function MathChallengeClient() {
         const roastResult = await generateRoast(roastInput);
         roastMessage = roastResult.roast;
       }
+      setCurrentAiMessage(roastMessage);
+      setCurrentAiMessageType('roast');
       setFeedback(`❌ ${roastMessage}`);
+      const docId = await saveAiFeedbackToFirestore(roastMessage, 'roast');
+      setCurrentFeedbackDocId(docId);
+
     } catch (error: any) {
       console.error("AI API Error (Time Up):", error);
       setFeedback(`😵‍💫 Oops! AI hiccup: ${error.message || 'Failed to get response.'} Maybe suggest a roast while it recovers?`);
@@ -164,7 +213,7 @@ export default function MathChallengeClient() {
       setCurrentStreak(0); 
       setIsLoading(false);
     }
-  }, [num1, num2, operator, isLoading, isFeedbackPhase, getOperationTypeForAI, currentStreak, hasApiError, userSuggestionForFailedApi]);
+  }, [num1, num2, operator, isLoading, isFeedbackPhase, getOperationTypeForAI, currentStreak, hasApiError, userSuggestionForFailedApi, correctAnswer, userAnswer]);
 
   useEffect(() => {
     if (isFeedbackPhase || isLoading) {
@@ -211,6 +260,11 @@ export default function MathChallengeClient() {
     setIsLoading(true);
     setIsFeedbackPhase(true); 
     setFeedback('⏳ AI is brewing a response...');
+    setCurrentAiMessage(null);
+    setCurrentAiMessageType(null);
+    setCurrentFeedbackDocId(null);
+    setHasVotedOnCurrentFeedback(false);
+
 
     if (hasApiError && userSuggestionForFailedApi.trim() !== '') {
       setFeedback(`💡 ${userSuggestionForFailedApi} (AI unavailable, using your suggestion)`);
@@ -238,7 +292,12 @@ export default function MathChallengeClient() {
           const roastResult = await generateRoast(roastInput);
           roastMessage = roastResult.roast;
         }
+        setCurrentAiMessage(roastMessage);
+        setCurrentAiMessageType('roast');
         setFeedback(`❌ ${roastMessage}`);
+        const docId = await saveAiFeedbackToFirestore(roastMessage, 'roast');
+        setCurrentFeedbackDocId(docId);
+
       } catch (error: any) {
         console.error("AI API Error (Invalid Input):", error);
         setFeedback(`😵‍💫 Oops! AI hiccup: ${error.message || 'Failed to get response.'} Feel free to suggest a roast!`);
@@ -269,8 +328,13 @@ export default function MathChallengeClient() {
             });
             complimentMessage = complimentResult.compliment;
           }
+          setCurrentAiMessage(complimentMessage);
+          setCurrentAiMessageType('compliment');
           setFeedback(`✅ ${complimentMessage} (Streak: ${newStreak})`);
+          const docId = await saveAiFeedbackToFirestore(complimentMessage, 'compliment');
+          setCurrentFeedbackDocId(docId);
           setTimeout(() => setShowConfetti(false), 4000);
+
         } else {
           let roastMessage: string;
           const roastInput = {
@@ -285,7 +349,11 @@ export default function MathChallengeClient() {
             const roastResult = await generateRoast(roastInput);
             roastMessage = roastResult.roast;
           }
+          setCurrentAiMessage(roastMessage);
+          setCurrentAiMessageType('roast');
           setFeedback(`❌ ${roastMessage}`);
+          const docId = await saveAiFeedbackToFirestore(roastMessage, 'roast');
+          setCurrentFeedbackDocId(docId);
           setCurrentStreak(0);
         }
       } catch (error: any) {
@@ -308,21 +376,43 @@ export default function MathChallengeClient() {
     setIsSubmissionDialogOpen(true);
   };
 
-  // The actual submission to Firestore is handled in SubmissionDialog now
-  // This function is kept if we want to use userSuggestionForFailedApi
-  // const handleLocalSubmissionForFailedApi = (type: 'roast' | 'compliment', text: string) => {
-  //   console.log(`User submitted ${type} for failed API: ${text}`);
-  //   setUserSuggestionForFailedApi(text); 
-  //   // Toast is now handled in SubmissionDialog or if API error occurs
-  //   setIsSubmissionDialogOpen(false); // Assuming dialog closes after this
-  // };
+  const handleVote = async (voteType: 'upvote' | 'downvote') => {
+    if (!currentFeedbackDocId || hasVotedOnCurrentFeedback) {
+      toast({
+        title: "Already Voted",
+        description: "You've already voted on this feedback or feedback ID is missing.",
+        variant: "default",
+      });
+      return;
+    }
+    if (db.app.options.projectId === "YOUR_PROJECT_ID") {
+       toast({
+            title: "Firebase Not Configured",
+            description: "Please update src/lib/firebase.ts with your Firebase project details to vote.",
+            variant: "destructive",
+        });
+        return;
+    }
 
-  const handleVote = (voteType: 'upvote' | 'downvote') => {
-    toast({
-      title: `Vote Recorded! (UI Only)`,
-      description: `You ${voteType}d this feedback. This is a UI placeholder; votes are not currently saved to a database for AI responses.`,
-      variant: "default",
-    });
+    try {
+      const feedbackRef = doc(db, 'ai_generated_feedback', currentFeedbackDocId);
+      await updateDoc(feedbackRef, {
+        [voteType === 'upvote' ? 'upvotes' : 'downvotes']: increment(1)
+      });
+      setHasVotedOnCurrentFeedback(true);
+      toast({
+        title: `Vote Recorded!`,
+        description: `Your ${voteType} has been submitted to the database.`,
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error submitting vote to Firestore:", error);
+      toast({
+        title: "Vote Failed",
+        description: "Could not record your vote. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
 
@@ -400,13 +490,13 @@ export default function MathChallengeClient() {
                 {feedbackIcon()}
                 {feedback.substring(feedback.indexOf(" ") + 1)}
               </p>
-              {isFeedbackPhase && !isLoading && (feedback.startsWith("✅") || feedback.startsWith("❌")) && (
+              {isFeedbackPhase && !isLoading && currentFeedbackDocId && (feedback.startsWith("✅") || feedback.startsWith("❌")) && (
                 <div className="flex space-x-2 mt-2">
-                  <Button variant="ghost" size="sm" onClick={() => handleVote('upvote')} aria-label="Upvote feedback">
-                    <ThumbsUp className="h-5 w-5 text-green-500" />
+                  <Button variant="ghost" size="sm" onClick={() => handleVote('upvote')} aria-label="Upvote feedback" disabled={hasVotedOnCurrentFeedback}>
+                    <ThumbsUp className={`h-5 w-5 ${hasVotedOnCurrentFeedback ? 'text-muted-foreground' : 'text-green-500'}`} />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleVote('downvote')} aria-label="Downvote feedback">
-                    <ThumbsDown className="h-5 w-5 text-red-500" />
+                  <Button variant="ghost" size="sm" onClick={() => handleVote('downvote')} aria-label="Downvote feedback" disabled={hasVotedOnCurrentFeedback}>
+                    <ThumbsDown className={`h-5 w-5 ${hasVotedOnCurrentFeedback ? 'text-muted-foreground' : 'text-red-500'}`} />
                   </Button>
                 </div>
               )}
@@ -417,8 +507,8 @@ export default function MathChallengeClient() {
       <SubmissionDialog 
         isOpen={isSubmissionDialogOpen}
         onClose={() => setIsSubmissionDialogOpen(false)}
-        // onSubmit is now handled internally by SubmissionDialog
       />
     </>
   );
 }
+
