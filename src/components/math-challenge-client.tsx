@@ -9,12 +9,13 @@ import { generateRoast } from '@/ai/flows/generate-roast';
 import { generateCompliment } from '@/ai/flows/generate-compliment';
 import { generateBossRoast } from '@/ai/flows/generate-boss-roast';
 import { generateBossCompliment } from '@/ai/flows/generate-boss-compliment';
-import { Loader2, Send, AlertTriangle, SmilePlus, ChevronRight, MessageSquarePlus, Brain, Info, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Loader2, Send, AlertTriangle, SmilePlus, ChevronRight, MessageSquarePlus, Brain, Info, ThumbsUp, ThumbsDown, Save } from 'lucide-react';
 import Confetti from 'react-confetti';
 import SubmissionDialog from '@/components/submission-dialog';
+import SaveScoreDialog from '@/components/save-score-dialog'; // New Dialog
 import { useToast } from "@/hooks/use-toast";
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc, increment, query, where, getDocs, setDoc } from 'firebase/firestore';
 
 
 type Operator = '+' | '-' | '*' | '/';
@@ -28,7 +29,7 @@ export default function MathChallengeClient() {
   const [operator, setOperator] = useState<Operator>('+');
   const [correctAnswer, setCorrectAnswer] = useState<number>(0);
   const [userAnswer, setUserAnswer] = useState<string>('');
-  const [feedback, setFeedback] = useState<string>(''); // For display with prefix
+  const [feedback, setFeedback] = useState<string>(''); 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   
   const [timeLeft, setTimeLeft] = useState<number>(TIMER_DURATION);
@@ -53,6 +54,10 @@ export default function MathChallengeClient() {
   const [currentFeedbackDocId, setCurrentFeedbackDocId] = useState<string | null>(null);
   const [hasVotedOnCurrentFeedback, setHasVotedOnCurrentFeedback] = useState<boolean>(false);
 
+  const [isSaveScoreDialogOpen, setIsSaveScoreDialogOpen] = useState<boolean>(false);
+  const [scoreToSave, setScoreToSave] = useState<number>(0);
+  const [isSavingScoreLoading, setIsSavingScoreLoading] = useState<boolean>(false);
+
 
   const getOperationTypeForAI = useCallback((op: Operator): string => {
     if (op === '+') return 'addition';
@@ -76,7 +81,7 @@ export default function MathChallengeClient() {
         submittedAt: serverTimestamp(),
         question: `${num1} ${operator} ${num2}`,
         correctAnswer: correctAnswer,
-        userAnswerContext: userAnswer, // context of user's answer when this AI feedback was generated
+        userAnswerContext: userAnswer, 
       });
       return docRef.id;
     } catch (error) {
@@ -103,6 +108,7 @@ export default function MathChallengeClient() {
     setCurrentAiMessageType(null);
     setCurrentFeedbackDocId(null);
     setHasVotedOnCurrentFeedback(false);
+    // Do not reset isSaveScoreDialogOpen or scoreToSave here, they are handled separately
 
     const ops: Operator[] = ['+', '-', '*', '/'];
     const currentOp = ops[Math.floor(Math.random() * ops.length)];
@@ -321,6 +327,9 @@ export default function MathChallengeClient() {
               answer: correctAnswer 
             });
             complimentMessage = bossComplimentResult.bossCompliment;
+             // Offer to save score
+            setScoreToSave(newStreak);
+            setIsSaveScoreDialogOpen(true);
           } else {
             const complimentResult = await generateCompliment({ 
               question: `${num1} ${operator} ${num2}`, 
@@ -412,6 +421,46 @@ export default function MathChallengeClient() {
         description: "Could not record your vote. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleSaveScoreToLeaderboard = async (playerName: string) => {
+    if (!playerName.trim()) {
+      toast({ title: "Name Required", description: "Please enter a name to save your score.", variant: "destructive" });
+      return;
+    }
+    if (db.app.options.projectId === "YOUR_PROJECT_ID") {
+      toast({ title: "Firebase Not Configured", description: "Please update src/lib/firebase.ts.", variant: "destructive" });
+      return;
+    }
+
+    setIsSavingScoreLoading(true);
+    try {
+      const leaderboardRef = collection(db, "leaderboard");
+      const q = query(leaderboardRef, where("name", "==", playerName.trim()));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        // Player exists, update if new score is higher
+        const playerDoc = querySnapshot.docs[0];
+        const existingScore = playerDoc.data().score || 0;
+        if (scoreToSave > existingScore) {
+          await updateDoc(doc(db, "leaderboard", playerDoc.id), { score: scoreToSave });
+          toast({ title: "High Score Updated!", description: `Nice one, ${playerName}! Your new high score of ${scoreToSave} is saved.` });
+        } else {
+          toast({ title: "Score Not Higher", description: `Your score of ${scoreToSave} isn't higher than your previous best of ${existingScore}, ${playerName}. Keep trying!` });
+        }
+      } else {
+        // New player, add to leaderboard
+        await addDoc(leaderboardRef, { name: playerName.trim(), score: scoreToSave });
+        toast({ title: "High Score Saved!", description: `Congrats, ${playerName}! Your score of ${scoreToSave} is on the leaderboard.` });
+      }
+    } catch (error: any) {
+      console.error("Error saving score to leaderboard:", error);
+      toast({ title: "Error Saving Score", description: `Could not save score: ${error.message}`, variant: "destructive" });
+    } finally {
+      setIsSavingScoreLoading(false);
+      setIsSaveScoreDialogOpen(false);
     }
   };
 
@@ -508,7 +557,13 @@ export default function MathChallengeClient() {
         isOpen={isSubmissionDialogOpen}
         onClose={() => setIsSubmissionDialogOpen(false)}
       />
+      <SaveScoreDialog
+        isOpen={isSaveScoreDialogOpen}
+        onClose={() => setIsSaveScoreDialogOpen(false)}
+        onSubmit={handleSaveScoreToLeaderboard}
+        currentScoreToSave={scoreToSave}
+        isLoading={isSavingScoreLoading}
+      />
     </>
   );
 }
-
