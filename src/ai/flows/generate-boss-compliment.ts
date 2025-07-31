@@ -12,13 +12,14 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateBossComplimentInputSchema = z.object({
-  question: z.string().describe('The math question that was solved as the 5th correct answer in a row.'),
+  question: z.string().describe('The math question that was solved.'),
   answer: z.number().describe('The correct answer to the math question.'),
+  streak: z.number().describe('The current correct answer streak count.'),
 });
 export type GenerateBossComplimentInput = z.infer<typeof GenerateBossComplimentInputSchema>;
 
 const GenerateBossComplimentOutputSchema = z.object({
-  bossCompliment: z.string().describe('An absolutely epic, over-the-top, legendary Gen Z success roast STRICTLY in Roman Urdu for achieving a 5-question streak. This is a roast for being CORRECT. It should be sarcastic or backhanded. CRITICAL: Avoid using the words "ustaad" or "slay".'),
+  bossCompliment: z.string().describe('An absolutely epic, over-the-top, legendary Gen Z success roast STRICTLY in Roman Urdu for achieving a high streak. This is a roast for being CORRECT. It should be sarcastic or backhanded. CRITICAL: Avoid using the words "ustaad" or "slay".'),
 });
 export type GenerateBossComplimentOutput = z.infer<typeof GenerateBossComplimentOutputSchema>;
 
@@ -30,10 +31,11 @@ const prompt = ai.definePrompt({
   name: 'generateBossComplimentPrompt',
   input: {schema: GenerateBossComplimentInputSchema},
   output: {schema: GenerateBossComplimentOutputSchema},
-  prompt: `You are a legendary Gen Z roaster. The user just achieved an amazing 5-question correct streak! The last question they nailed was "{{{question}}}" and the answer was {{{answer}}}.
+  prompt: `You are a legendary Gen Z roaster. The user just achieved an amazing {{{streak}}}-question correct streak! The last question they nailed was "{{{question}}}" and the answer was {{{answer}}}.
 Instead of a compliment, you must deliver an absolutely epic, over-the-top, legendary success roast for this achievement.
 This is a ROAST for being CORRECT. It should be sarcastic, backhanded, and witty. Make it sound like they just got lucky or the questions were too easy.
-Example ideas: "5 sahi? Lagta hai aaj Google search fast chal raha hai.", "Wah, 5 sahi jawab. Calculator ka shukriya ada kiya?", "Itni lambi streak? Pehli baar hui hai kya?"
+Your roast MUST acknowledge the user's specific streak number ({{{streak}}}). Don't just say "5".
+Example ideas for a high streak like 15: "15 sahi? Lagta hai aaj Google search fast chal raha hai.", "Wah, 15 sahi jawab. Calculator ka shukriya ada kiya?", "Itni lambi streak? Pehli baar hui hai kya?"
 
 IMPORTANT:
 1. The roast MUST be in Roman Urdu ONLY. Do not use any other language.

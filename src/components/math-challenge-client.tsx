@@ -11,6 +11,7 @@ import { generateBossRoast } from '@/ai/flows/generate-boss-roast';
 import { generateBossCompliment } from '@/ai/flows/generate-boss-compliment';
 import { Loader2, Send, AlertTriangle, SmilePlus, ChevronRight, Brain, Info } from 'lucide-react';
 import Confetti from 'react-confetti';
+import { useToast } from "@/hooks/use-toast";
 
 type Operator = '+' | '-' | '*' | '/';
 const TIMER_DURATION = 10; 
@@ -40,6 +41,8 @@ export default function MathChallengeClient() {
   
   const [userSuggestionForFailedApi, setUserSuggestionForFailedApi] = useState<string>('');
   const [hasApiError, setHasApiError] = useState<boolean>(false);
+  
+  const { toast } = useToast();
 
   const getOperationTypeForAI = useCallback((op: Operator): string => {
     if (op === '+') return 'addition';
@@ -255,7 +258,8 @@ export default function MathChallengeClient() {
           if (newStreak >= STREAK_TARGET) {
             const bossComplimentResult = await generateBossCompliment({ 
               question: `${num1} ${operator} ${num2}`, 
-              answer: correctAnswer 
+              answer: correctAnswer,
+              streak: newStreak
             });
             successMessage = bossComplimentResult.bossCompliment;
           } else {
