@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { generateRoast } from '@/ai/flows/generate-roast';
-import { generateCompliment } from '@/ai/flows/generate-compliment';
+import { generateSuccessRoast } from '@/ai/flows/generate-success-roast'; // Changed from compliment
 import { generateBossRoast } from '@/ai/flows/generate-boss-roast';
 import { generateBossCompliment } from '@/ai/flows/generate-boss-compliment';
 import { Loader2, Send, AlertTriangle, SmilePlus, ChevronRight, MessageSquarePlus, Brain, Info, ThumbsUp, ThumbsDown, Save } from 'lucide-react';
@@ -219,7 +219,7 @@ export default function MathChallengeClient() {
       setCurrentStreak(0); 
       setIsLoading(false);
     }
-  }, [num1, num2, operator, isLoading, isFeedbackPhase, getOperationTypeForAI, currentStreak, hasApiError, userSuggestionForFailedApi, correctAnswer, userAnswer]);
+  }, [num1, num2, operator, isLoading, isFeedbackPhase, getOperationTypeForAI, currentStreak, hasApiError, userSuggestionForFailedApi]);
 
   useEffect(() => {
     if (isFeedbackPhase || isLoading) {
@@ -319,28 +319,32 @@ export default function MathChallengeClient() {
           const newStreak = currentStreak + 1;
           setCurrentStreak(newStreak);
           setShowConfetti(true);
-          let complimentMessage: string;
+          let successMessage: string;
 
           if (newStreak >= STREAK_TARGET) {
+            // For a boss-level streak, we still give a compliment as a bigger reward.
+            // This can be changed to a boss-level roast if desired.
             const bossComplimentResult = await generateBossCompliment({ 
               question: `${num1} ${operator} ${num2}`, 
               answer: correctAnswer 
             });
-            complimentMessage = bossComplimentResult.bossCompliment;
+            successMessage = bossComplimentResult.bossCompliment;
+            setCurrentAiMessageType('compliment'); // It's a compliment
              // Offer to save score
             setScoreToSave(newStreak);
             setIsSaveScoreDialogOpen(true);
           } else {
-            const complimentResult = await generateCompliment({ 
+            const successRoastResult = await generateSuccessRoast({ 
               question: `${num1} ${operator} ${num2}`, 
               answer: correctAnswer 
             });
-            complimentMessage = complimentResult.compliment;
+            successMessage = successRoastResult.roast;
+            setCurrentAiMessageType('roast'); // It's a roast
           }
-          setCurrentAiMessage(complimentMessage);
-          setCurrentAiMessageType('compliment');
-          setFeedback(`✅ ${complimentMessage} (Streak: ${newStreak})`);
-          const docId = await saveAiFeedbackToFirestore(complimentMessage, 'compliment');
+          setCurrentAiMessage(successMessage);
+          setFeedback(`✅ ${successMessage} (Streak: ${newStreak})`);
+          // Note: The type sent to Firestore is based on the AI message type
+          const docId = await saveAiFeedbackToFirestore(successMessage, currentAiMessageType!);
           setCurrentFeedbackDocId(docId);
           setTimeout(() => setShowConfetti(false), 4000);
 
@@ -567,3 +571,5 @@ export default function MathChallengeClient() {
     </>
   );
 }
+
+    
