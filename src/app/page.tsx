@@ -2,8 +2,6 @@
 "use client";
 import { useState, useEffect } from 'react';
 import MathChallengeClient from '@/components/math-challenge-client';
-import RoastOfTheDay from '@/components/roast-of-the-day';
-import Leaderboard from '@/components/leaderboard';
 
 export default function SavageMathPage() {
   const [bgColor, setBgColor] = useState<string>('hsl(260, 6%, 10%)'); // Initial background
@@ -29,10 +27,6 @@ export default function SavageMathPage() {
         Roast n’ Math 🔥💀
         </h1>
         <MathChallengeClient />
-      </div>
-      <div className="w-full max-w-md space-y-6 mt-6">
-        <RoastOfTheDay />
-        <Leaderboard />
       </div>
     </main>
   );
