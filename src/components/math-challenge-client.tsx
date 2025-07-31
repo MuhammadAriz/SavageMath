@@ -505,7 +505,7 @@ export default function MathChallengeClient() {
               placeholder="Your Answer"
               className="text-center text-lg h-12 bg-input placeholder:text-muted-foreground"
               disabled={isLoading || isFeedbackPhase || (!isFeedbackPhase && timeLeft === 0)}
-              
+              autoComplete="off"
             />
             <div ref={buttonContainerRef} className="relative h-16 w-full flex items-center justify-center">
               {isFeedbackPhase && !isLoading ? (
