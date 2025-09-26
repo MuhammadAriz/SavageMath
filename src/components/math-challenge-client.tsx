@@ -9,7 +9,7 @@ import { generateRoast } from '@/ai/flows/generate-roast';
 import { generateSuccessRoast } from '@/ai/flows/generate-success-roast';
 import { generateBossRoast } from '@/ai/flows/generate-boss-roast';
 import { generateBossCompliment } from '@/ai/flows/generate-boss-compliment';
-import { Loader2, Send, AlertTriangle, SmilePlus, ChevronRight, Brain, Info, Languages } from 'lucide-react';
+import { Loader2, Send, AlertTriangle, SmilePlus, ChevronRight, Brain, Info, Languages, Timer } from 'lucide-react';
 import Confetti from 'react-confetti';
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -161,7 +161,7 @@ export default function MathChallengeClient() {
 
     } catch (error: any) {
       console.error("AI API Error (Time Up):", error);
-      setFeedback(`😵‍💫 Oops! AI hiccup: ${error.message || 'Failed to get response.'}`);
+      setFeedback(`😵‍💫 Oops! AI hiccup: The model is overloaded. Please try again in a moment.`);
       setHasApiError(true); 
     } finally {
       setCurrentStreak(0); 
@@ -246,7 +246,7 @@ export default function MathChallengeClient() {
 
       } catch (error: any) {
         console.error("AI API Error (Invalid Input):", error);
-        setFeedback(`😵‍💫 Oops! AI hiccup: ${error.message || 'Failed to get response.'}`);
+        setFeedback(`😵‍💫 Oops! AI hiccup: The model is overloaded. Please try again in a moment.`);
         setHasApiError(true);
       } finally {
         setCurrentStreak(0);
@@ -300,7 +300,7 @@ export default function MathChallengeClient() {
         }
       } catch (error: any) {
         console.error("AI API Error:", error);
-        setFeedback(`😵‍💫 Oops! AI hiccup: ${error.message || 'Failed to get response.'}`);
+        setFeedback(`😵‍💫 Oops! AI hiccup: The model is overloaded. Please try again in a moment.`);
         setHasApiError(true);
         if (!isCorrect) setCurrentStreak(0); 
       } finally {
@@ -327,7 +327,7 @@ export default function MathChallengeClient() {
   return (
     <>
       {showConfetti && windowSize.width > 0 && <Confetti width={windowSize.width} height={windowSize.height} recycle={false} numberOfPieces={400} gravity={0.2} />}
-      <div className="flex justify-between items-center w-full mb-2">
+      <div className="flex justify-between items-center w-full mb-4">
         <div className="flex items-center gap-2">
             <Label htmlFor="language-select" className="flex items-center gap-1">
               <Languages className="h-4 w-4" /> Language:
@@ -345,13 +345,17 @@ export default function MathChallengeClient() {
               </SelectContent>
             </Select>
         </div>
-         <div className="flex items-center text-lg font-semibold text-primary">
-          <Brain className="mr-2 h-5 w-5" /> Streak: {currentStreak}
+         <div className="flex items-center gap-4">
+            <div className={`flex items-center text-lg font-semibold ${timerColor}`}>
+              <Timer className="mr-2 h-5 w-5" /> 
+              {!isFeedbackPhase ? `${timeLeft}s` : '0s'}
+            </div>
+            <div className="flex items-center text-lg font-semibold text-primary">
+              <Brain className="mr-2 h-5 w-5" /> Streak: {currentStreak}
+            </div>
         </div>
       </div>
-      <p className={`text-xl font-bold text-center my-3 ${timerColor}`}>
-        {!isFeedbackPhase ? `Time left: ${timeLeft}s` : ' '}
-      </p>
+
       <Card className="w-full shadow-2xl bg-card/90 backdrop-blur-sm border-border/50">
         <CardHeader>
           <CardTitle className="text-2xl sm:text-3xl font-headline text-center text-primary">
@@ -398,7 +402,7 @@ export default function MathChallengeClient() {
           </form>
           {feedback && (
             <div className={`mt-6 p-4 rounded-md bg-muted/70 border border-border/30 min-h-[6rem] flex flex-col items-center justify-center transition-opacity duration-500 ease-in-out ${feedback ? 'opacity-100' : 'opacity-0'}`}>
-              <p className="text-center text-md sm:text-lg font-body leading-relaxed mb-2">
+              <p className="text-center text-md sm:text-lg font-body leading-relaxed break-words mb-2">
                 {feedbackIcon()}
                 {feedback.substring(feedback.indexOf(" ") + 1)}
               </p>
