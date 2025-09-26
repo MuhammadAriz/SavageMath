@@ -51,16 +51,6 @@ export default function MathChallengeClient() {
   
   const { toast } = useToast();
 
-  useEffect(() => {
-    let difficulty: Difficulty = 'Easy';
-    if (currentStreak > 20) {
-      difficulty = 'Hard';
-    } else if (currentStreak > 10) {
-      difficulty = 'Medium';
-    }
-    setLevel(difficulty);
-  }, [currentStreak]);
-
   const getOperationTypeForAI = useCallback((op: Operator): string => {
     if (op === '+') return 'addition';
     if (op === '-') return 'subtraction';
@@ -79,11 +69,12 @@ export default function MathChallengeClient() {
     setTimeLeft(TIMER_DURATION); 
 
     let currentDifficulty: Difficulty = 'Easy';
-    if (currentStreak > 20) {
+    if (currentStreak >= 21) {
       currentDifficulty = 'Hard';
-    } else if (currentStreak > 10) {
+    } else if (currentStreak >= 11) {
       currentDifficulty = 'Medium';
     }
+    setLevel(currentDifficulty);
     
     const ops: Operator[] = ['+', '-', '*', '/'];
     const currentOp = ops[Math.floor(Math.random() * ops.length)];
@@ -381,29 +372,8 @@ export default function MathChallengeClient() {
   return (
     <>
       {showConfetti && windowSize.width > 0 && <Confetti width={windowSize.width} height={windowSize.height} recycle={false} numberOfPieces={400} gravity={0.2} />}
-      <div className="flex justify-between items-center w-full mb-4">
-        <div className="flex items-center gap-2">
-            <Label htmlFor="language-select" className="flex items-center gap-1">
-              <Languages className="h-4 w-4" /> Language:
-            </Label>
-            <Select value={language} onValueChange={setLanguage}>
-              <SelectTrigger id="language-select" className="w-[150px] h-9">
-                <SelectValue placeholder="Language" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Roman Urdu">Roman Urdu</SelectItem>
-                <SelectItem value="English">English</SelectItem>
-                <SelectItem value="Spanish">Spanish</SelectItem>
-                <SelectItem value="French">French</SelectItem>
-                <SelectItem value="German">German</SelectItem>
-                <SelectItem value="Punjabi">Punjabi</SelectItem>
-                <SelectItem value="Balochi">Balochi</SelectItem>
-                <SelectItem value="Pashto">Pashto</SelectItem>
-                <SelectItem value="Sindhi">Sindhi</SelectItem>
-              </SelectContent>
-            </Select>
-        </div>
-         <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-2 w-full mb-4">
+        <div className="flex justify-between items-center w-full">
             <div className={`flex items-center text-lg font-semibold ${levelColor}`}>
               <TrendingUp className="mr-2 h-5 w-5" /> 
               Level: {level}
@@ -411,6 +381,29 @@ export default function MathChallengeClient() {
             <div className={`flex items-center text-lg font-semibold ${timerColor}`}>
               <Timer className="mr-2 h-5 w-5" /> 
               {!isFeedbackPhase ? `${timeLeft}s` : '0s'}
+            </div>
+        </div>
+        <div className="flex justify-between items-center w-full">
+            <div className="flex items-center gap-2">
+                <Label htmlFor="language-select" className="flex items-center gap-1">
+                  <Languages className="h-4 w-4" /> Language:
+                </Label>
+                <Select value={language} onValueChange={setLanguage}>
+                  <SelectTrigger id="language-select" className="w-[150px] h-9">
+                    <SelectValue placeholder="Language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Roman Urdu">Roman Urdu</SelectItem>
+                    <SelectItem value="English">English</SelectItem>
+                    <SelectItem value="Spanish">Spanish</SelectItem>
+                    <SelectItem value="French">French</SelectItem>
+                    <SelectItem value="German">German</SelectItem>
+                    <SelectItem value="Punjabi">Punjabi</SelectItem>
+                    <SelectItem value="Balochi">Balochi</SelectItem>
+                    <SelectItem value="Pashto">Pashto</SelectItem>
+                    <SelectItem value="Sindhi">Sindhi</SelectItem>
+                  </SelectContent>
+                </Select>
             </div>
             <div className="flex items-center text-lg font-semibold text-primary">
               <Brain className="mr-2 h-5 w-5" /> Streak: {currentStreak}
