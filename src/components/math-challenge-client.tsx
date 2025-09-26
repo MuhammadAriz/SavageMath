@@ -52,13 +52,13 @@ export default function MathChallengeClient() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (currentStreak <= 10) {
-      setLevel('Easy');
-    } else if (currentStreak <= 20) {
-      setLevel('Medium');
-    } else {
-      setLevel('Hard');
+    let difficulty: Difficulty = 'Easy';
+    if (currentStreak > 20) {
+      difficulty = 'Hard';
+    } else if (currentStreak > 10) {
+      difficulty = 'Medium';
     }
+    setLevel(difficulty);
   }, [currentStreak]);
 
   const getOperationTypeForAI = useCallback((op: Operator): string => {
@@ -78,24 +78,24 @@ export default function MathChallengeClient() {
     setUserSuggestionForFailedApi(''); 
     setTimeLeft(TIMER_DURATION); 
 
+    let currentDifficulty: Difficulty = 'Easy';
+    if (currentStreak > 20) {
+      currentDifficulty = 'Hard';
+    } else if (currentStreak > 10) {
+      currentDifficulty = 'Medium';
+    }
+    
     const ops: Operator[] = ['+', '-', '*', '/'];
     const currentOp = ops[Math.floor(Math.random() * ops.length)];
     let n1: number, n2: number;
     let calculatedAnswer: number;
 
-    let difficulty: Difficulty = 'Easy';
-    if (currentStreak > 20) {
-      difficulty = 'Hard';
-    } else if (currentStreak > 10) {
-      difficulty = 'Medium';
-    }
-
     switch (currentOp) {
       case '+':
-        if (difficulty === 'Easy') {
+        if (currentDifficulty === 'Easy') {
           n1 = Math.floor(Math.random() * 90) + 10;
           n2 = Math.floor(Math.random() * 90) + 10;
-        } else if (difficulty === 'Medium') {
+        } else if (currentDifficulty === 'Medium') {
           n1 = Math.floor(Math.random() * 400) + 100;
           n2 = Math.floor(Math.random() * 400) + 100;
         } else { // Hard
@@ -105,10 +105,10 @@ export default function MathChallengeClient() {
         calculatedAnswer = n1 + n2;
         break;
       case '-':
-        if (difficulty === 'Easy') {
+        if (currentDifficulty === 'Easy') {
           n1 = Math.floor(Math.random() * 90) + 10;
           n2 = Math.floor(Math.random() * n1) + 1;
-        } else if (difficulty === 'Medium') {
+        } else if (currentDifficulty === 'Medium') {
           n1 = Math.floor(Math.random() * 400) + 100;
           n2 = Math.floor(Math.random() * n1);
         } else { // Hard
@@ -119,10 +119,10 @@ export default function MathChallengeClient() {
         calculatedAnswer = n1 - n2;
         break;
       case '*':
-        if (difficulty === 'Easy') {
+        if (currentDifficulty === 'Easy') {
           n1 = Math.floor(Math.random() * 11) + 2; 
           n2 = Math.floor(Math.random() * 11) + 2; 
-        } else if (difficulty === 'Medium') {
+        } else if (currentDifficulty === 'Medium') {
           n1 = Math.floor(Math.random() * 15) + 5;
           n2 = Math.floor(Math.random() * 15) + 5;
         } else { // Hard
@@ -132,10 +132,10 @@ export default function MathChallengeClient() {
         calculatedAnswer = n1 * n2;
         break;
       case '/':
-        if (difficulty === 'Easy') {
+        if (currentDifficulty === 'Easy') {
             n2 = Math.floor(Math.random() * 11) + 2;
             n1 = (Math.floor(Math.random() * 12) + 1) * n2;
-        } else if (difficulty === 'Medium') {
+        } else if (currentDifficulty === 'Medium') {
             n2 = Math.floor(Math.random() * 15) + 5;
             n1 = (Math.floor(Math.random() * 15) + 1) * n2;
         } else { // Hard
@@ -172,7 +172,7 @@ export default function MathChallengeClient() {
 
   useEffect(() => {
     generateNewQuestion();
-  }, [generateNewQuestion]);
+  }, []);
 
 
   const handleTimeUp = useCallback(async () => {
@@ -475,3 +475,5 @@ export default function MathChallengeClient() {
     </>
   );
 }
+
+  
