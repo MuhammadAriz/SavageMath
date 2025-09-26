@@ -378,12 +378,6 @@ export default function MathChallengeClient() {
               <TrendingUp className="mr-2 h-5 w-5" /> 
               Level: {level}
             </div>
-            <div className={`flex items-center text-lg font-semibold ${timerColor}`}>
-              <Timer className="mr-2 h-5 w-5" /> 
-              {!isFeedbackPhase ? `${timeLeft}s` : '0s'}
-            </div>
-        </div>
-        <div className="flex justify-between items-center w-full">
             <div className="flex items-center gap-2">
                 <Label htmlFor="language-select" className="flex items-center gap-1">
                   <Languages className="h-4 w-4" /> Language:
@@ -404,6 +398,12 @@ export default function MathChallengeClient() {
                     <SelectItem value="Sindhi">Sindhi</SelectItem>
                   </SelectContent>
                 </Select>
+            </div>
+        </div>
+        <div className="flex justify-between items-center w-full">
+            <div className={`flex items-center text-lg font-semibold ${timerColor}`}>
+              <Timer className="mr-2 h-5 w-5" /> 
+              Time Left: {!isFeedbackPhase ? `${timeLeft}s` : '0s'}
             </div>
             <div className="flex items-center text-lg font-semibold text-primary">
               <Brain className="mr-2 h-5 w-5" /> Streak: {currentStreak}
