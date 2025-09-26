@@ -9,13 +9,15 @@ import { generateRoast } from '@/ai/flows/generate-roast';
 import { generateSuccessRoast } from '@/ai/flows/generate-success-roast';
 import { generateBossRoast } from '@/ai/flows/generate-boss-roast';
 import { generateBossCompliment } from '@/ai/flows/generate-boss-compliment';
-import { Loader2, Send, AlertTriangle, SmilePlus, ChevronRight, Brain, Info, Languages, Timer } from 'lucide-react';
+import { Loader2, Send, AlertTriangle, SmilePlus, ChevronRight, Brain, Info, Languages, Timer, TrendingUp } from 'lucide-react';
 import Confetti from 'react-confetti';
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 
 type Operator = '+' | '-' | '*' | '/';
+type Difficulty = 'Easy' | 'Medium' | 'Hard';
+
 const TIMER_DURATION = 10; 
 const STREAK_TARGET = 5;
 
@@ -40,6 +42,7 @@ export default function MathChallengeClient() {
 
   const [isFeedbackPhase, setIsFeedbackPhase] = useState<boolean>(false);
   const [currentStreak, setCurrentStreak] = useState<number>(0);
+  const [level, setLevel] = useState<Difficulty>('Easy');
   
   const [userSuggestionForFailedApi, setUserSuggestionForFailedApi] = useState<string>('');
   const [hasApiError, setHasApiError] = useState<boolean>(false);
@@ -47,6 +50,16 @@ export default function MathChallengeClient() {
   const [language, setLanguage] = useState<string>('Roman Urdu');
   
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (currentStreak <= 10) {
+      setLevel('Easy');
+    } else if (currentStreak <= 20) {
+      setLevel('Medium');
+    } else {
+      setLevel('Hard');
+    }
+  }, [currentStreak]);
 
   const getOperationTypeForAI = useCallback((op: Operator): string => {
     if (op === '+') return 'addition';
@@ -70,27 +83,65 @@ export default function MathChallengeClient() {
     let n1: number, n2: number;
     let calculatedAnswer: number;
 
+    let difficulty: Difficulty = 'Easy';
+    if (currentStreak > 20) {
+      difficulty = 'Hard';
+    } else if (currentStreak > 10) {
+      difficulty = 'Medium';
+    }
+
     switch (currentOp) {
       case '+':
-        n1 = Math.floor(Math.random() * 90) + 10; 
-        n2 = Math.floor(Math.random() * 90) + 10; 
+        if (difficulty === 'Easy') {
+          n1 = Math.floor(Math.random() * 90) + 10;
+          n2 = Math.floor(Math.random() * 90) + 10;
+        } else if (difficulty === 'Medium') {
+          n1 = Math.floor(Math.random() * 400) + 100;
+          n2 = Math.floor(Math.random() * 400) + 100;
+        } else { // Hard
+          n1 = Math.floor(Math.random() * 900) + 100;
+          n2 = Math.floor(Math.random() * 900) + 100;
+        }
         calculatedAnswer = n1 + n2;
         break;
       case '-':
-        n1 = Math.floor(Math.random() * 90) + 10; 
-        n2 = Math.floor(Math.random() * n1) + 1;  
+        if (difficulty === 'Easy') {
+          n1 = Math.floor(Math.random() * 90) + 10;
+          n2 = Math.floor(Math.random() * n1) + 1;
+        } else if (difficulty === 'Medium') {
+          n1 = Math.floor(Math.random() * 400) + 100;
+          n2 = Math.floor(Math.random() * n1);
+        } else { // Hard
+          n1 = Math.floor(Math.random() * 900) + 100;
+          n2 = Math.floor(Math.random() * n1);
+        }
         if (n1 < n2) [n1, n2] = [n2, n1]; 
         calculatedAnswer = n1 - n2;
         break;
       case '*':
-        n1 = Math.floor(Math.random() * 13) + 2; 
-        n2 = Math.floor(Math.random() * 13) + 2; 
+        if (difficulty === 'Easy') {
+          n1 = Math.floor(Math.random() * 11) + 2; 
+          n2 = Math.floor(Math.random() * 11) + 2; 
+        } else if (difficulty === 'Medium') {
+          n1 = Math.floor(Math.random() * 15) + 5;
+          n2 = Math.floor(Math.random() * 15) + 5;
+        } else { // Hard
+          n1 = Math.floor(Math.random() * 20) + 10;
+          n2 = Math.floor(Math.random() * 20) + 10;
+        }
         calculatedAnswer = n1 * n2;
         break;
       case '/':
-        n2 = Math.floor(Math.random() * 11) + 2; 
-        const maxQuotient = 15;
-        n1 = (Math.floor(Math.random() * maxQuotient) + 1) * n2; 
+        if (difficulty === 'Easy') {
+            n2 = Math.floor(Math.random() * 11) + 2;
+            n1 = (Math.floor(Math.random() * 12) + 1) * n2;
+        } else if (difficulty === 'Medium') {
+            n2 = Math.floor(Math.random() * 15) + 5;
+            n1 = (Math.floor(Math.random() * 15) + 1) * n2;
+        } else { // Hard
+            n2 = Math.floor(Math.random() * 20) + 10;
+            n1 = (Math.floor(Math.random() * 20) + 1) * n2;
+        }
         calculatedAnswer = n1 / n2;
         break;
       default:
@@ -117,7 +168,7 @@ export default function MathChallengeClient() {
         transition: 'left 0.5s ease-out, top 0.5s ease-out',
       });
     }
-  }, []); 
+  }, [currentStreak]); 
 
   useEffect(() => {
     generateNewQuestion();
@@ -323,6 +374,9 @@ export default function MathChallengeClient() {
     if (feedback.startsWith("💡")) return <Info className="inline mr-2 h-6 w-6 text-blue-400"/>;
     return null;
   }
+  
+  const levelColor = level === 'Easy' ? 'text-green-400' : level === 'Medium' ? 'text-yellow-400' : 'text-red-400';
+
 
   return (
     <>
@@ -350,6 +404,10 @@ export default function MathChallengeClient() {
             </Select>
         </div>
          <div className="flex items-center gap-4">
+            <div className={`flex items-center text-lg font-semibold ${levelColor}`}>
+              <TrendingUp className="mr-2 h-5 w-5" /> 
+              Level: {level}
+            </div>
             <div className={`flex items-center text-lg font-semibold ${timerColor}`}>
               <Timer className="mr-2 h-5 w-5" /> 
               {!isFeedbackPhase ? `${timeLeft}s` : '0s'}
