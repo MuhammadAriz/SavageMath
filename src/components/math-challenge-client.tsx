@@ -342,6 +342,10 @@ export default function MathChallengeClient() {
                 <SelectItem value="Spanish">Spanish</SelectItem>
                 <SelectItem value="French">French</SelectItem>
                 <SelectItem value="German">German</SelectItem>
+                <SelectItem value="Punjabi">Punjabi</SelectItem>
+                <SelectItem value="Balochi">Balochi</SelectItem>
+                <SelectItem value="Pashto">Pashto</SelectItem>
+                <SelectItem value="Sindhi">Sindhi</SelectItem>
               </SelectContent>
             </Select>
         </div>
@@ -413,5 +417,3 @@ export default function MathChallengeClient() {
     </>
   );
 }
-
-    
