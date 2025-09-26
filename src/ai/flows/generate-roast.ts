@@ -16,11 +16,12 @@ const GenerateRoastInputSchema = z.object({
   topic: z.string().describe('The type of math operation (e.g., addition, multiplication).'),
   question: z.string().describe('The math question that was answered incorrectly or timed out.'),
   userAnswer: z.string().optional().describe('The answer provided by the user. Can be non-numeric, gibberish, or empty if submitted nothing/timed out.'),
+  language: z.string().describe('The language for the generated roast (e.g., "Roman Urdu", "English").'),
 });
 export type GenerateRoastInput = z.infer<typeof GenerateRoastInputSchema>;
 
 const GenerateRoastOutputSchema = z.object({
-  roast: z.string().describe('A funny and savage Gen Z style roast in Roman Urdu.'),
+  roast: z.string().describe('A funny and savage Gen Z style roast.'),
 });
 export type GenerateRoastOutput = z.infer<typeof GenerateRoastOutputSchema>;
 
@@ -41,7 +42,7 @@ const generateRoastPrompt = ai.definePrompt({
 {{else}}
   They submitted absolutely NOTHING or ran out of time! Roast them hard for their cowardice, hesitation, or slowness. Example: "Khali chor dia? Dar gaye kya?"
 {{/if}}
-The roast MUST be in Roman Urdu. Keep it short, punchy, and savage. CRITICAL: DO NOT use the word "ustaad". DO NOT use the word "slay".`,
+The roast MUST be in {{{language}}}. Keep it short, punchy, and savage. CRITICAL: DO NOT use the word "ustaad". DO NOT use the word "slay".`,
 });
 
 const generateRoastFlow = ai.defineFlow(
@@ -55,4 +56,3 @@ const generateRoastFlow = ai.defineFlow(
     return output!;
   }
 );
-

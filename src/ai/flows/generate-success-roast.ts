@@ -14,6 +14,7 @@ import {z} from 'genkit';
 const GenerateSuccessRoastInputSchema = z.object({
   question: z.string().describe('The math question that was solved correctly.'),
   answer: z.number().describe('The correct answer to the math question.'),
+  language: z.string().describe('The language for the generated roast (e.g., "Roman Urdu", "English").'),
 });
 export type GenerateSuccessRoastInput = z.infer<typeof GenerateSuccessRoastInputSchema>;
 
@@ -33,7 +34,7 @@ const prompt = ai.definePrompt({
   prompt: `You are a savage Gen Z roaster. The user just CORRECTLY solved this math question: "{{{question}}}" The answer was {{{answer}}}.
 Instead of a compliment, give them a witty, sarcastic, or backhanded roast for their success.
 Make it sound like they just got lucky or like the question was too easy.
-The roast MUST be in Roman Urdu.
+The roast MUST be in {{{language}}}.
 Be creative and funny. Don't be genuinely mean, just sarcastic.
 Examples: "Tukka lag gaya?", "Itna asaan sawaal? Nursery me karte the hum.", "Calculator use kiya na? Sach batao."
 IMPORTANT: DO NOT use the word "ustaad". DO NOT use the word "slay".
@@ -51,5 +52,3 @@ const generateSuccessRoastFlow = ai.defineFlow(
     return output!;
   }
 );
-
-    

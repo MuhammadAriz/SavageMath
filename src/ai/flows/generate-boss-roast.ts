@@ -15,11 +15,12 @@ const GenerateBossRoastInputSchema = z.object({
   topic: z.string().describe('The type of math operation (e.g., addition, multiplication).'),
   question: z.string().describe('The math question where the user broke their 5+ streak.'),
   userAnswer: z.string().optional().describe('The answer provided by the user. Can be non-numeric, gibberish, or empty if submitted nothing/timed out.'),
+  language: z.string().describe('The language for the generated roast (e.g., "Roman Urdu", "English").'),
 });
 export type GenerateBossRoastInput = z.infer<typeof GenerateBossRoastInputSchema>;
 
 const GenerateBossRoastOutputSchema = z.object({
-  bossRoast: z.string().describe('A truly devastating, yet hilarious, boss-level Gen Z style roast in Roman Urdu for fumbling a 5+ streak.'),
+  bossRoast: z.string().describe('A truly devastating, yet hilarious, boss-level Gen Z style roast for fumbling a 5+ streak.'),
 });
 export type GenerateBossRoastOutput = z.infer<typeof GenerateBossRoastOutputSchema>;
 
@@ -40,7 +41,7 @@ const generateBossRoastPrompt = ai.definePrompt({
 {{else}}
   They submitted NOTHING or ran out of time, breaking their glorious 5+ streak! Roast them with extreme prejudice for this epic choke. They had it all and threw it away! Example: "Streak thi hath mein, jawab nahi? Aise kon karta hai bhai?"
 {{/if}}
-Unleash a truly devastating, yet hilariously savage, boss-level Gen Z roast in Roman Urdu. Make them question their life choices (in a funny way). This isn't just a roast, it's an event. CRITICAL: DO NOT use the word "ustaad". DO NOT use the word "slay".`,
+Unleash a truly devastating, yet hilariously savage, boss-level Gen Z roast in {{{language}}}. Make them question their life choices (in a funny way). This isn't just a roast, it's an event. CRITICAL: DO NOT use the word "ustaad". DO NOT use the word "slay".`,
 });
 
 const generateBossRoastFlow = ai.defineFlow(
@@ -54,4 +55,3 @@ const generateBossRoastFlow = ai.defineFlow(
     return output!;
   }
 );
-

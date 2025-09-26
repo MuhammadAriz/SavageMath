@@ -9,9 +9,11 @@ import { generateRoast } from '@/ai/flows/generate-roast';
 import { generateSuccessRoast } from '@/ai/flows/generate-success-roast';
 import { generateBossRoast } from '@/ai/flows/generate-boss-roast';
 import { generateBossCompliment } from '@/ai/flows/generate-boss-compliment';
-import { Loader2, Send, AlertTriangle, SmilePlus, ChevronRight, Brain, Info } from 'lucide-react';
+import { Loader2, Send, AlertTriangle, SmilePlus, ChevronRight, Brain, Info, Languages } from 'lucide-react';
 import Confetti from 'react-confetti';
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 type Operator = '+' | '-' | '*' | '/';
 const TIMER_DURATION = 10; 
@@ -41,6 +43,8 @@ export default function MathChallengeClient() {
   
   const [userSuggestionForFailedApi, setUserSuggestionForFailedApi] = useState<string>('');
   const [hasApiError, setHasApiError] = useState<boolean>(false);
+  
+  const [language, setLanguage] = useState<string>('Roman Urdu');
   
   const { toast } = useToast();
 
@@ -142,7 +146,8 @@ export default function MathChallengeClient() {
       const roastInput = {
         topic: getOperationTypeForAI(operator),
         question: `${num1} ${operator} ${num2}`,
-        userAnswer: undefined, 
+        userAnswer: undefined,
+        language: language,
       };
 
       if (currentStreak >= STREAK_TARGET) {
@@ -162,7 +167,7 @@ export default function MathChallengeClient() {
       setCurrentStreak(0); 
       setIsLoading(false);
     }
-  }, [num1, num2, operator, isLoading, isFeedbackPhase, getOperationTypeForAI, currentStreak, hasApiError, userSuggestionForFailedApi]);
+  }, [num1, num2, operator, isLoading, isFeedbackPhase, getOperationTypeForAI, currentStreak, hasApiError, userSuggestionForFailedApi, language]);
 
   useEffect(() => {
     if (isFeedbackPhase || isLoading) {
@@ -227,6 +232,7 @@ export default function MathChallengeClient() {
           topic: getOperationTypeForAI(operator),
           question: `${num1} ${operator} ${num2}`,
           userAnswer: trimmedUserAnswer === '' ? undefined : trimmedUserAnswer,
+          language: language,
         };
 
         if (currentStreak >= STREAK_TARGET) {
@@ -259,13 +265,15 @@ export default function MathChallengeClient() {
             const bossComplimentResult = await generateBossCompliment({ 
               question: `${num1} ${operator} ${num2}`, 
               answer: correctAnswer,
-              streak: newStreak
+              streak: newStreak,
+              language: language,
             });
             successMessage = bossComplimentResult.bossCompliment;
           } else {
             const successRoastResult = await generateSuccessRoast({ 
               question: `${num1} ${operator} ${num2}`, 
-              answer: correctAnswer 
+              answer: correctAnswer,
+              language: language, 
             });
             successMessage = successRoastResult.roast;
           }
@@ -278,6 +286,7 @@ export default function MathChallengeClient() {
             topic: getOperationTypeForAI(operator),
             question: `${num1} ${operator} ${num2}`,
             userAnswer: trimmedUserAnswer, 
+            language: language,
           };
           if (currentStreak >= STREAK_TARGET) {
             const bossRoastResult = await generateBossRoast(roastInput);
@@ -318,7 +327,24 @@ export default function MathChallengeClient() {
   return (
     <>
       {showConfetti && windowSize.width > 0 && <Confetti width={windowSize.width} height={windowSize.height} recycle={false} numberOfPieces={400} gravity={0.2} />}
-      <div className="flex justify-end items-center w-full mb-2">
+      <div className="flex justify-between items-center w-full mb-2">
+        <div className="flex items-center gap-2">
+            <Label htmlFor="language-select" className="flex items-center gap-1">
+              <Languages className="h-4 w-4" /> Language:
+            </Label>
+            <Select value={language} onValueChange={setLanguage} disabled={isLoading || isFeedbackPhase}>
+              <SelectTrigger id="language-select" className="w-[150px] h-9">
+                <SelectValue placeholder="Language" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Roman Urdu">Roman Urdu</SelectItem>
+                <SelectItem value="English">English</SelectItem>
+                <SelectItem value="Spanish">Spanish</SelectItem>
+                <SelectItem value="French">French</SelectItem>
+                <SelectItem value="German">German</SelectItem>
+              </SelectContent>
+            </Select>
+        </div>
          <div className="flex items-center text-lg font-semibold text-primary">
           <Brain className="mr-2 h-5 w-5" /> Streak: {currentStreak}
         </div>
