@@ -332,7 +332,7 @@ export default function MathChallengeClient() {
             <Label htmlFor="language-select" className="flex items-center gap-1">
               <Languages className="h-4 w-4" /> Language:
             </Label>
-            <Select value={language} onValueChange={setLanguage} disabled={isLoading || isFeedbackPhase}>
+            <Select value={language} onValueChange={setLanguage}>
               <SelectTrigger id="language-select" className="w-[150px] h-9">
                 <SelectValue placeholder="Language" />
               </SelectTrigger>
