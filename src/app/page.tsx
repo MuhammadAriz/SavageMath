@@ -30,10 +30,10 @@ export default function SavageMathPage() {
       </div>
 
       <footer className="absolute bottom-4 w-full text-center text-muted-foreground text-sm">
-        <div className="inline-flex items-center gap-2">
+        <div className="inline-flex items-center justify-center gap-2">
           <span>Powered by</span>
           <a href="https://3xabrand.vercel.app" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" version="1.0" width="80.000000pt" height="36.000000pt" viewBox="0 0 450.000000 202.000000" preserveAspectRatio="xMidYMid meet">
+          <svg xmlns="http://www.w3.org/2000/svg" version="1.0" width="60.000000pt" height="27.000000pt" viewBox="0 0 450.000000 202.000000" preserveAspectRatio="xMidYMid meet">
             <metadata fill="#cca2a2">
             Created by potrace 1.10, written by Peter Selinger 2001-2011
             </metadata>
