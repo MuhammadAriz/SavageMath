@@ -165,7 +165,6 @@ export default function MathChallengeClient() {
     generateNewQuestion();
   }, []);
 
-
   const handleTimeUp = useCallback(async () => {
     if (isLoading || isFeedbackPhase) return; 
 
@@ -376,23 +375,23 @@ export default function MathChallengeClient() {
         <div className="flex justify-between items-center w-full">
             <div className={`flex items-center text-lg font-semibold ${levelColor}`}>
               <TrendingUp className="mr-2 h-5 w-5" /> 
-              Level: {level}
+              <span className="hidden sm:inline">Level:&nbsp;</span>{level}
             </div>
             <div className={`flex items-center text-lg font-semibold ${timerColor}`}>
               <Timer className="mr-2 h-5 w-5" /> 
-              Time Left: {!isFeedbackPhase ? `${timeLeft}s` : '0s'}
+              <span className="hidden sm:inline">Time Left:&nbsp;</span>{!isFeedbackPhase ? `${timeLeft}s` : '0s'}
             </div>
         </div>
         <div className="flex justify-between items-center w-full">
             <div className="flex items-center text-lg font-semibold text-primary">
-              <Brain className="mr-2 h-5 w-5" /> Streak: {currentStreak}
+              <Brain className="mr-2 h-5 w-5" /> <span className="hidden sm:inline">Streak:&nbsp;</span>{currentStreak}
             </div>
             <div className="flex items-center gap-2">
                 <Label htmlFor="language-select" className="flex items-center gap-1">
-                  <Languages className="h-4 w-4" /> Language:
+                  <Languages className="h-4 w-4" /> <span className="hidden sm:inline">Language:</span>
                 </Label>
                 <Select value={language} onValueChange={setLanguage}>
-                  <SelectTrigger id="language-select" className="w-[150px] h-9">
+                  <SelectTrigger id="language-select" className="w-auto sm:w-[150px] h-9">
                     <SelectValue placeholder="Language" />
                   </SelectTrigger>
                   <SelectContent>
