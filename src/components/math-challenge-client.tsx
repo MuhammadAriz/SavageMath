@@ -184,18 +184,23 @@ export default function MathChallengeClient() {
     
     try {
       let roastMessage: string;
-      const roastInput = {
-        topic: getOperationTypeForAI(operator),
-        question: `${num1} ${operator} ${num2}`,
-        userAnswer: undefined,
-        language: language,
-      };
 
       if (currentStreak >= STREAK_TARGET) {
-        const bossRoastResult = await generateBossRoast(roastInput);
+        const bossRoastResult = await generateBossRoast({
+          topic: getOperationTypeForAI(operator),
+          question: `${num1} ${operator} ${num2}`,
+          userAnswer: undefined,
+          language: language,
+          streak: currentStreak,
+        });
         roastMessage = bossRoastResult.bossRoast;
       } else {
-        const roastResult = await generateRoast(roastInput);
+        const roastResult = await generateRoast({
+          topic: getOperationTypeForAI(operator),
+          question: `${num1} ${operator} ${num2}`,
+          userAnswer: undefined,
+          language: language,
+        });
         roastMessage = roastResult.roast;
       }
       setFeedback(`❌ ${roastMessage}`);
@@ -269,18 +274,23 @@ export default function MathChallengeClient() {
     if (trimmedUserAnswer === '' || isNaN(userAnswerNum)) {
       try {
         let roastMessage: string;
-        const roastInput = {
-          topic: getOperationTypeForAI(operator),
-          question: `${num1} ${operator} ${num2}`,
-          userAnswer: trimmedUserAnswer === '' ? undefined : trimmedUserAnswer,
-          language: language,
-        };
 
         if (currentStreak >= STREAK_TARGET) {
-          const bossRoastResult = await generateBossRoast(roastInput);
+          const bossRoastResult = await generateBossRoast({
+            topic: getOperationTypeForAI(operator),
+            question: `${num1} ${operator} ${num2}`,
+            userAnswer: trimmedUserAnswer === '' ? undefined : trimmedUserAnswer,
+            language: language,
+            streak: currentStreak,
+          });
           roastMessage = bossRoastResult.bossRoast;
         } else {
-          const roastResult = await generateRoast(roastInput);
+          const roastResult = await generateRoast({
+            topic: getOperationTypeForAI(operator),
+            question: `${num1} ${operator} ${num2}`,
+            userAnswer: trimmedUserAnswer === '' ? undefined : trimmedUserAnswer,
+            language: language,
+          });
           roastMessage = roastResult.roast;
         }
         setFeedback(`❌ ${roastMessage}`);
@@ -323,17 +333,23 @@ export default function MathChallengeClient() {
 
         } else {
           let roastMessage: string;
-          const roastInput = {
-            topic: getOperationTypeForAI(operator),
-            question: `${num1} ${operator} ${num2}`,
-            userAnswer: trimmedUserAnswer, 
-            language: language,
-          };
+
           if (currentStreak >= STREAK_TARGET) {
-            const bossRoastResult = await generateBossRoast(roastInput);
+            const bossRoastResult = await generateBossRoast({
+              topic: getOperationTypeForAI(operator),
+              question: `${num1} ${operator} ${num2}`,
+              userAnswer: trimmedUserAnswer,
+              language: language,
+              streak: currentStreak,
+            });
             roastMessage = bossRoastResult.bossRoast;
           } else {
-            const roastResult = await generateRoast(roastInput);
+            const roastResult = await generateRoast({
+              topic: getOperationTypeForAI(operator),
+              question: `${num1} ${operator} ${num2}`,
+              userAnswer: trimmedUserAnswer, 
+              language: language,
+            });
             roastMessage = roastResult.roast;
           }
           setFeedback(`❌ ${roastMessage}`);
@@ -377,14 +393,14 @@ export default function MathChallengeClient() {
               <TrendingUp className="mr-2 h-5 w-5" /> 
               <span className="hidden sm:inline">Level:&nbsp;</span>{level}
             </div>
-            <div className={`flex items-center text-lg font-semibold ${timerColor}`}>
-              <Timer className="mr-2 h-5 w-5" /> 
-              <span className="hidden sm:inline">Time Left:&nbsp;</span>{!isFeedbackPhase ? `${timeLeft}s` : '0s'}
+            <div className="flex items-center text-lg font-semibold text-primary">
+              <Brain className="mr-2 h-5 w-5" /> <span className="hidden sm:inline">Streak:&nbsp;</span>{currentStreak}
             </div>
         </div>
         <div className="flex justify-between items-center w-full">
-            <div className="flex items-center text-lg font-semibold text-primary">
-              <Brain className="mr-2 h-5 w-5" /> <span className="hidden sm:inline">Streak:&nbsp;</span>{currentStreak}
+            <div className={`flex items-center text-lg font-semibold ${timerColor}`}>
+              <Timer className="mr-2 h-5 w-5" /> 
+              <span className="hidden sm:inline">Time Left:&nbsp;</span>{!isFeedbackPhase ? `${timeLeft}s` : '0s'}
             </div>
             <div className="flex items-center gap-2">
                 <Label htmlFor="language-select" className="flex items-center gap-1">
@@ -449,7 +465,7 @@ export default function MathChallengeClient() {
                   ) : (
                     <Send className="mr-2 h-5 w-5" />
                   )}
-                  {isLoading && !feedback.startsWith("✅") && !feedback.startsWith("❌") && !feedback.startsWith("😵‍💫") && !feedback.startsWith("⏰") && !feedback.startsWith("💡") ? 'Thinking...' : 'Submit Answer'}
+                  {isLoading && !feedback.startsWith("✅") && !feedback-startsWith("❌") && !feedback.startsWith("😵‍💫") && !feedback.startsWith("⏰") && !feedback.startsWith("💡") ? 'Thinking...' : 'Submit Answer'}
                 </Button>
               )}
             </div>
