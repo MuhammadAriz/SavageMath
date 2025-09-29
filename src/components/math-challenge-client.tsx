@@ -69,9 +69,9 @@ export default function MathChallengeClient() {
     setTimeLeft(TIMER_DURATION); 
 
     let currentDifficulty: Difficulty = 'Easy';
-    if (currentStreak >= 21) {
+    if (currentStreak >= 20) {
       currentDifficulty = 'Hard';
-    } else if (currentStreak >= 11) {
+    } else if (currentStreak >= 10) {
       currentDifficulty = 'Medium';
     }
     setLevel(currentDifficulty);
