@@ -465,7 +465,7 @@ export default function MathChallengeClient() {
                   ) : (
                     <Send className="mr-2 h-5 w-5" />
                   )}
-                  {isLoading && !feedback.startsWith("✅") && !feedback-startsWith("❌") && !feedback.startsWith("😵‍💫") && !feedback.startsWith("⏰") && !feedback.startsWith("💡") ? 'Thinking...' : 'Submit Answer'}
+                  {isLoading && !feedback.startsWith("✅") && !feedback.startsWith("❌") && !feedback.startsWith("😵‍💫") && !feedback.startsWith("⏰") && !feedback.startsWith("💡") ? 'Thinking...' : 'Submit Answer'}
                 </Button>
               )}
             </div>
@@ -483,3 +483,5 @@ export default function MathChallengeClient() {
     </>
   );
 }
+
+    
