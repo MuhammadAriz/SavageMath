@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { generateRoast } from '@/ai/flows/generate-roast';
-import { generateSuccessRoast } from '@/ai/flows/generate-success-roast';
+import { generateCompliment } from '@/ai/flows/generate-compliment';
 import { generateBossRoast } from '@/ai/flows/generate-boss-roast';
 import { generateBossCompliment } from '@/ai/flows/generate-boss-compliment';
 import { Loader2, Send, AlertTriangle, SmilePlus, ChevronRight, Brain, Info, Languages, Timer, TrendingUp } from 'lucide-react';
@@ -321,12 +321,12 @@ export default function MathChallengeClient() {
             });
             successMessage = bossComplimentResult.bossCompliment;
           } else {
-            const successRoastResult = await generateSuccessRoast({ 
+            const complimentResult = await generateCompliment({ 
               question: `${num1} ${operator} ${num2}`, 
               answer: correctAnswer,
               language: language, 
             });
-            successMessage = successRoastResult.roast;
+            successMessage = complimentResult.compliment;
           }
           setFeedback(`✅ ${successMessage} (Streak: ${newStreak})`);
           setTimeout(() => setShowConfetti(false), 4000);

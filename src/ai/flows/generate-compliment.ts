@@ -15,11 +15,12 @@ import {z} from 'genkit';
 const GenerateComplimentInputSchema = z.object({
   question: z.string().describe('The math question that was solved.'),
   answer: z.number().describe('The correct answer to the math question.'),
+  language: z.string().describe('The language for the generated compliment (e.g., "Roman Urdu", "English").'),
 });
 export type GenerateComplimentInput = z.infer<typeof GenerateComplimentInputSchema>;
 
 const GenerateComplimentOutputSchema = z.object({
-  compliment: z.string().describe('A witty, creative, and varied Gen Z compliment in Roman Urdu for solving the math question correctly. CRITICAL: Avoid using the words "ustaad" or "slay".'),
+  compliment: z.string().describe('A witty, creative, and varied Gen Z compliment for solving the math question correctly. CRITICAL: Avoid using the words "ustaad" or "slay".'),
 });
 export type GenerateComplimentOutput = z.infer<typeof GenerateComplimentOutputSchema>;
 
@@ -32,7 +33,7 @@ const prompt = ai.definePrompt({
   input: {schema: GenerateComplimentInputSchema},
   output: {schema: GenerateComplimentOutputSchema},
   prompt: `You are a Gen Z chatbot. The user has just solved the following math question correctly: {{{question}}} The answer was {{{answer}}}.
-Give the user a single, witty, Gen Z compliment in Roman Urdu.
+Give the user a single, witty, Gen Z compliment in {{{language}}}.
 Be EXTREMELY creative and try to use DIFFERENT PHRASING and UNIQUE slang each time.
 IMPORTANT: DO NOT use the word "ustaad". DO NOT use the word "slay".
 Avoid overly common or repetitive lead-ins. Make it sound fresh, original, and genuinely hype! Surprise the user with your vocabulary.`,
@@ -49,4 +50,3 @@ const generateComplimentFlow = ai.defineFlow(
     return output!;
   }
 );
-
